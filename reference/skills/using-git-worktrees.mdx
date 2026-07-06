@@ -1,0 +1,201 @@
+---
+title: "using-git-worktrees Skill: Isolated Workspaces for Feature Development"
+sidebarTitle: "Git Worktrees"
+description: "The using-git-worktrees skill sets up an isolated git worktree before feature work begins, preventing contamination of the main branch while keeping Claude settings portable."
+---
+
+The `using-git-worktrees` skill ensures that any feature work or implementation plan executes inside an isolated workspace, keeping the main branch clean and making it safe to run tests, install dependencies, and make changes without affecting other work in progress.
+
+## Skill Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `using-git-worktrees` |
+| **Author** | LIDR.co |
+| **Version** | 1.0.0 |
+
+## When to Use
+
+- Before running `/ff` or `/apply` on any implementation plan
+- Before starting feature work that needs isolation from the current workspace
+- Whenever you need to test a branch without disturbing uncommitted work on another
+
+## Core Principle
+
+Detect existing isolation first. Use your platform's native worktree tools if available. Fall back to manual `git worktree` commands only when no native tool exists. Never fight the harness — if isolation already exists, do not create another layer on top of it.
+
+The agent announces at the start: *"I'm using the using-git-worktrees skill to set up an isolated workspace."*
+
+## Workflow
+
+<Steps>
+  <Step title="Step 0 — Detect Existing Isolation">
+    Before creating anything, check whether you are already inside an isolated workspace:
+
+    ```bash
+    GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+    GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+    BRANCH=$(git branch --show-current)
+    ```
+
+    If `GIT_DIR != GIT_COMMON`, you are already inside a linked worktree — skip directly to Step 3 (Project Setup). Do **not** create another worktree.
+
+    If `GIT_DIR == GIT_COMMON`, you are in a normal checkout. Ask for consent before proceeding:
+
+    > "Would you like me to set up an isolated worktree? It protects your current branch from changes."
+
+    If the user declines, work in place and skip to Step 3.
+  </Step>
+  <Step title="Step 1a — Use a Native Worktree Tool (Preferred)">
+    If your platform provides a native worktree mechanism — a tool named `EnterWorktree`, `WorktreeCreate`, a `/worktree` command, or a `--worktree` flag — use it. Native tools manage directory placement, branch creation, and harness state automatically.
+
+    After the native tool finishes, copy `.claude/settings.json` and `.claude/settings.local.json` from the primary workspace into the new worktree only if the native flow does not propagate them automatically.
+
+    Proceed to Step 3 once the native tool completes.
+  </Step>
+  <Step title="Step 1b — Git Worktree Fallback">
+    Use this step **only** if no native worktree tool is available.
+
+    **Safety check first** — verify `.worktrees/` is ignored before creating anything:
+
+    ```bash
+    git check-ignore -q .worktrees 2>/dev/null
+    ```
+
+    If it is not ignored, add `.worktrees/` to `.gitignore` and commit the change before continuing. This prevents worktree contents from appearing in `git status` or being accidentally committed.
+
+    Then create the worktree at the standard location inside the repository:
+
+    ```bash
+    project=$(basename "$(git rev-parse --show-toplevel)")
+    SOURCE_ROOT=$(git rev-parse --show-toplevel)
+    LOCATION="$SOURCE_ROOT/.worktrees"
+
+    mkdir -p "$LOCATION"
+    path="$LOCATION/$BRANCH_NAME"
+
+    git worktree add "$path" -b "$BRANCH_NAME"
+    cd "$path"
+    ```
+
+    After `cd` into the new worktree, copy local Claude settings from the **main checkout** using `SOURCE_ROOT` captured before `git worktree add`:
+
+    ```bash
+    copied_claude_settings=false
+    for claude_settings in ".claude/settings.json" ".claude/settings.local.json"; do
+        if [ -f "$SOURCE_ROOT/$claude_settings" ]; then
+            mkdir -p ".claude"
+            cp -p "$SOURCE_ROOT/$claude_settings" "./$claude_settings"
+            echo "Copied $claude_settings to worktree"
+            copied_claude_settings=true
+        fi
+    done
+
+    if [ "$copied_claude_settings" = false ]; then
+        echo "No local Claude settings found (.claude/settings.json or .claude/settings.local.json)"
+    fi
+    ```
+  </Step>
+  <Step title="Step 3 — Project Setup">
+    Auto-detect and run the appropriate setup commands for the project:
+
+    ```bash
+    # Node.js
+    if [ -f package.json ]; then npm install; fi
+
+    # Rust
+    if [ -f Cargo.toml ]; then cargo build; fi
+
+    # Python
+    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    if [ -f pyproject.toml ]; then poetry install; fi
+
+    # Go
+    if [ -f go.mod ]; then go mod download; fi
+    ```
+  </Step>
+  <Step title="Step 4 — Verify Clean Baseline">
+    Run the project's test suite to confirm the workspace starts clean:
+
+    ```bash
+    npm test        # Node.js
+    cargo test      # Rust
+    pytest          # Python
+    go test ./...   # Go
+    ```
+
+    If tests fail, report the failures and ask whether to proceed or investigate first. Never silently continue with a broken baseline — you would not be able to distinguish new failures from pre-existing ones.
+
+    Report when ready:
+
+    ```
+    Worktree ready at <full-path>
+    Claude settings copied (or: none found / skipped per harness)
+    Tests passing (<N> tests, 0 failures)
+    Ready to implement <feature-name>
+    ```
+  </Step>
+  <Step title="Step 5 — Cleanup When Work Is Done">
+    Once the branch is merged, the PR closed, or the experiment discarded, remove the worktree. Never remove a worktree that still has uncommitted, unpushed, or unmerged changes.
+
+    First verify there is nothing to lose:
+
+    ```bash
+    git status --porcelain      # Must be empty
+    git log @{u}.. 2>/dev/null  # Must be empty
+    ```
+
+    If either returns output, stop. Report the unsaved work and ask how to proceed.
+
+    Capture the path and branch name before leaving the directory:
+
+    ```bash
+    WORKTREE_PATH=$(git rev-parse --show-toplevel)
+    BRANCH_NAME=$(git branch --show-current)
+    ```
+
+    Then remove using the same mechanism that created the worktree — native tool if Step 1a was used, or git commands if Step 1b was used:
+
+    ```bash
+    cd "$GIT_COMMON/.."           # Move out of the worktree first
+    git worktree remove "$WORKTREE_PATH"
+    git branch -d "$BRANCH_NAME"  # Safe delete; refuses if unmerged
+    git worktree prune             # Clean up stale metadata
+    ```
+
+    Verify cleanup completed:
+
+    ```bash
+    git worktree list
+    ls -d "$WORKTREE_PATH" 2>/dev/null
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The submodule guard: `GIT_DIR != GIT_COMMON` is also true inside git submodules, not just worktrees. Before concluding "already in a worktree", run `git rev-parse --show-superproject-working-tree 2>/dev/null`. If this returns a path, you are inside a submodule — treat the repo as a normal checkout and proceed with worktree creation rather than skipping it.
+</Note>
+
+## Quick Reference
+
+| Situation | Action |
+|---|---|
+| Already in a linked worktree | Skip creation — go to Step 3 |
+| In a submodule | Treat as normal repo — apply submodule guard |
+| Native worktree tool available | Use it (Step 1a) |
+| No native tool | Git worktree fallback (Step 1b) |
+| Standard worktree location | `<repo>/.worktrees/<branch>` |
+| `.worktrees/` not in `.gitignore` | Add it and commit before creating worktree |
+| Tests fail during baseline | Report failures and ask before proceeding |
+| Work complete, in linked worktree | Run Step 5 cleanup |
+| Never created a worktree | Skip Step 5 entirely |
+| Uncommitted changes at cleanup | Stop and ask user |
+
+## Common Mistakes
+
+- **Using `git worktree add` when a native tool is available** — this creates phantom state the harness cannot see. Always check for native tools first (Step 1a).
+- **Skipping Step 0** — creating a nested worktree inside an existing one corrupts git state.
+- **Not verifying `.worktrees/` is ignored** — worktree contents appear in `git status` and can be accidentally committed.
+- **Reading `SOURCE_ROOT` after `cd` into the new worktree** — `git rev-parse --show-toplevel` resolves to the worktree path after `cd`. Always capture `SOURCE_ROOT` in the main checkout before running `git worktree add`.
+- **Proceeding with failing baseline tests** — you cannot distinguish new bugs from pre-existing failures.
+- **Running `git worktree remove` on a native-tool-created worktree** — use the matching native cleanup command to avoid leaving phantom harness state.

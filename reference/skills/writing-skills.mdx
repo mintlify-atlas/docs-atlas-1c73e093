@@ -1,0 +1,166 @@
+---
+title: "writing-skills Skill: TDD Approach for Creating New AI Skills"
+sidebarTitle: "writing-skills"
+description: "The writing-skills skill applies Test-Driven Development to skill authoring: write test scenarios, watch agents fail, write the skill, verify agents comply, then refactor to close loopholes."
+---
+
+The `writing-skills` skill applies the discipline of Test-Driven Development to the creation of AI agent documentation. Writing a skill without first watching an agent fail without it is the same violation as writing production code without a failing test — you have no evidence the skill teaches the right thing.
+
+## Core Concept
+
+**Writing skills IS Test-Driven Development applied to process documentation.**
+
+You write test cases (pressure scenarios), watch them fail (baseline agent behaviour without the skill), write the skill (the documentation), watch the tests pass (the agent complies), and refactor (close loopholes the agent finds). The cycle is identical to software TDD — only the artefacts differ.
+
+Personal skills (not tied to a specific project) live in agent-specific directories: `~/.claude/skills/` for Claude Code, `~/.agents/skills/` for Codex. Project skills live in `ai-specs/skills/`.
+
+## TDD Mapping
+
+| TDD Concept | Skill Creation Equivalent |
+|---|---|
+| **Test case** | Pressure scenario with a subagent |
+| **Production code** | Skill document (`SKILL.md`) |
+| **Test fails (RED)** | Agent violates the rule without the skill present |
+| **Test passes (GREEN)** | Agent complies with the skill loaded |
+| **Refactor** | Close loopholes while maintaining compliance |
+| **Write test first** | Run baseline scenario **before** writing the skill |
+| **Watch it fail** | Document the exact rationalizations the agent uses |
+| **Minimal code** | Write the skill targeting those specific violations |
+| **Watch it pass** | Verify the agent now complies |
+| **Refactor cycle** | Find new rationalizations → plug → re-verify |
+
+## When to Create a Skill
+
+**Create a skill when:**
+- A technique was not intuitively obvious — if you had to figure it out, future agents will too
+- You would reference it again across different projects
+- The pattern applies broadly, not just to one codebase
+- Others on the team would benefit from the same guidance
+
+**Do not create a skill for:**
+- One-off solutions specific to a single task
+- Standard practices that are already well-documented elsewhere
+- Project-specific conventions — put those in `CLAUDE.md`
+- Mechanical constraints that can be enforced with validation or automation (save documentation for judgment calls)
+
+## What a Skill Is vs. Is Not
+
+| Skill IS | Skill IS NOT |
+|---|---|
+| A reusable technique or pattern | A narrative about how you solved a problem once |
+| A reference guide for proven approaches | A one-time solution write-up |
+| A tool that applies broadly across projects | A project-specific convention |
+| Documentation for judgment calls | A substitute for automated enforcement |
+
+## The RED-GREEN-REFACTOR Cycle for Skills
+
+<Steps>
+  <Step title="RED — Run the Baseline Scenario">
+    Before writing a single line of the skill, run a pressure scenario with a subagent **without** the skill present. Observe the raw behaviour:
+
+    - What choices does the agent make?
+    - What rationalizations does it produce (capture verbatim)?
+    - Which pressures triggered the violation: time pressure, sunk cost, authority, exhaustion?
+
+    You must see the failure. If you skip this step, you have no evidence the skill addresses the right problem.
+  </Step>
+  <Step title="Document Exact Violations">
+    Record the specific rationalizations and shortcuts the agent used. These become the content of the skill — each rationalization needs an explicit counter in the skill body.
+
+    For discipline-enforcing skills (rules the agent might try to skip), build a rationalization table from the baseline observations:
+
+    | Excuse | Reality |
+    |---|---|
+    | "This is too simple to need a skill" | Simple tasks still benefit from consistent patterns |
+    | "I'll test after, same result" | Testing after confirms what code does, not what it should do |
+    | "I'm following the spirit of the rule" | Violating the letter is violating the spirit |
+  </Step>
+  <Step title="GREEN — Write the Minimal Skill">
+    Write `ai-specs/skills/{name}/SKILL.md` addressing the specific rationalizations documented in the RED phase. Do not add content for hypothetical cases not observed in baseline testing.
+
+    Required elements:
+    - **YAML frontmatter**: `name`, `description` (starts with "Use when…"), `author`, `version`
+    - **Overview**: core principle in 1–2 sentences
+    - **When to Use**: bullet list of symptoms and triggering conditions
+    - **Instructions**: step-by-step process addressing the specific failures observed
+    - **Common Mistakes**: the rationalizations from baseline, with explicit counters
+
+    Run the same scenarios **with** the skill loaded. The agent should now comply.
+  </Step>
+  <Step title="REFACTOR — Close Loopholes">
+    Agents will find new rationalizations. For each new bypass discovered:
+
+    1. Add an explicit counter to the skill
+    2. Re-run the scenarios to confirm the counter works
+    3. Repeat until the skill is bulletproof under maximum pressure
+
+    A skill is done when you cannot find a new rationalization that causes a violation.
+  </Step>
+  <Step title="Verify and Deploy">
+    Before deploying, confirm:
+
+    - [ ] Skill name uses only letters, numbers, and hyphens
+    - [ ] `description` field starts with "Use when…" and describes triggering conditions only (no workflow summary)
+    - [ ] Description is written in third person and stays under 500 characters if possible
+    - [ ] The skill addresses the specific baseline failures — not hypothetical ones
+    - [ ] Common Mistakes section captures the rationalization table
+    - [ ] Supporting files are only added for heavy reference (100+ lines) or reusable tools
+
+    Then commit the skill, add the symlinks (or run `sync-agent-symlinks`), and verify one final time that the agent picks it up correctly.
+  </Step>
+</Steps>
+
+## SKILL.md Structure
+
+```markdown
+---
+name: skill-name
+description: Use when [specific triggering conditions and symptoms]
+author: LIDR.co
+version: 1.0.0
+---
+
+# Skill Name
+
+## Overview
+Core principle in 1-2 sentences.
+
+## When to Use
+- Bullet list of symptoms and situations
+- When NOT to use
+
+## Instructions
+Step-by-step process addressing baseline failures.
+
+## Common Mistakes
+| Excuse | Reality |
+|--------|---------|
+| [rationalization from baseline] | [counter] |
+
+## Quick Reference
+Table or bullets for scanning common operations.
+```
+
+## The Iron Law
+
+```
+NO SKILL WITHOUT A FAILING TEST FIRST
+```
+
+This applies to new skills **and** to edits of existing skills.
+
+Write a skill without running baseline scenarios first? Delete it and start over. Edit a skill without testing? Same violation. There are no exceptions for "simple additions", "just adding a section", or "documentation updates".
+
+## Claude Search Optimization
+
+The `description` field is what the agent reads to decide whether to load the skill. It must describe **when to use** the skill — triggering conditions and symptoms — never the workflow itself.
+
+```yaml
+# ❌ BAD: Summarises workflow — agent may follow this instead of reading the full skill
+description: Use when creating skills - run baseline scenario, write SKILL.md, verify compliance
+
+# ✅ GOOD: Triggering conditions only
+description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+```
+
+When a description summarises the workflow, agents take it as a shortcut and skip reading the skill body. Testing confirmed this failure mode: a description saying "code review between tasks" caused agents to perform one review, even though the skill clearly specified two.

@@ -1,0 +1,181 @@
+---
+title: "code-auditing Skill: Systematic 6-Phase Code Quality Audit"
+sidebarTitle: "code-auditing"
+description: "The code-auditing skill runs a systematic 6-phase audit covering security, performance, type safety, dead code, and library best practices, ending with a prioritized action plan."
+---
+
+The `code-auditing` skill provides a structured, repeatable approach to code quality reviews. Rather than ad-hoc inspection, it guides the agent through six defined phases — from baseline setup to a comprehensive prioritised report — ensuring nothing is missed and findings are actionable.
+
+## When to Use
+
+- Pre-release code reviews before shipping a feature
+- Technical debt sweeps to understand accumulated quality issues
+- Security assessments before deploying to production
+- Dependency and library audits when evaluating upgrades
+- Comprehensive best-practices verification against official documentation
+
+## The 6 Audit Phases
+
+<Steps>
+  <Step title="Phase 0: Pre-Analysis Setup">
+    Establish context before touching any code:
+
+    - Read project configuration files: `package.json`, `tsconfig.json`, `requirements.txt`, `go.mod`, etc.
+    - Identify the tech stack, frameworks, and core libraries
+    - Check for linting and formatting configurations (ESLint, Prettier, Black, etc.)
+    - Run existing lint, typecheck, and test commands to establish a **baseline** of pre-existing errors
+    - Use Context7 MCP to pre-load documentation for identified core libraries
+
+    ```bash
+    # JavaScript/TypeScript baseline
+    npm run lint
+    npm run typecheck
+    npm test
+    ```
+
+    Document all existing errors and warnings — these are the baseline, not new findings.
+  </Step>
+  <Step title="Phase 1: Discovery">
+    Map the full scope of the codebase before analysing anything:
+
+    - Find all code files by type (`.ts`, `.tsx`, `.js`, `.py`, `.go`, etc.)
+    - Create a tracking list for each file so no file is skipped
+    - Group files by module or feature for contextual analysis
+    - Prioritise core business logic over utilities and configuration
+
+    This phase produces a complete inventory that drives Phase 2.
+  </Step>
+  <Step title="Phase 2: File-by-File Analysis">
+    Work through every file in the tracking list. For each file, analyse all relevant categories:
+
+    - **Dead code**: unused functions, variables, imports, unreachable blocks
+    - **Code smells and anti-patterns**: functions over 50 lines, deep nesting, magic numbers, god objects
+    - **Security vulnerabilities**: hardcoded secrets, SQL injection risks, XSS, missing input validation
+    - **Performance issues**: O(n²) algorithms, N+1 queries, blocking I/O in async contexts, memory leaks
+    - **Deprecated APIs**: outdated usage patterns that need modernisation
+    - **Missing error handling**: empty catch blocks, unhandled promise rejections, fire-and-forget async calls
+    - **Custom implementations**: code that duplicates what an established library already provides
+
+    Mark each file as in-progress, then completed. Note specific file paths and line numbers for every finding.
+  </Step>
+  <Step title="Phase 3: Best Practices Verification">
+    For every major library and framework identified in Phase 0:
+
+    1. Retrieve the current official documentation (use Context7)
+    2. Compare the actual implementation against official patterns
+    3. Identify deviations from recommended usage
+    4. Note outdated patterns that need modernisation
+    5. Flag anti-patterns explicitly discouraged in the official docs
+
+    For TypeScript projects, also check for custom interfaces that duplicate official `@types/*` definitions — for example, a custom `IRequest` type when `express.Request` already exists.
+  </Step>
+  <Step title="Phase 4: Pattern Detection">
+    Shift from individual files to cross-file analysis. Look for:
+
+    - The same anti-pattern repeated across multiple files
+    - Duplicated utility logic that could be abstracted into a shared module
+    - Inconsistent coding styles or error handling strategies across modules
+    - Mixed async styles (callbacks, promises, and async/await used interchangeably)
+    - Cross-cutting concerns that need middleware or a shared abstraction
+
+    This phase surfaces systemic issues that file-by-file analysis cannot see.
+  </Step>
+  <Step title="Phase 5: Library Recommendations">
+    For every custom implementation found in Phase 2, evaluate whether a mature ecosystem package should replace it:
+
+    1. Check if current libraries already provide the functionality (use Context7)
+    2. Search package registries (npm, PyPI, crates.io) for mature alternatives
+    3. Verify library health: recent commits, open issues, download statistics, security advisories
+    4. Assess bundle size impact for frontend code
+    5. Check compatibility with the current project setup
+
+    Only recommend a replacement when it is clearly better maintained, more widely adopted, and safe to introduce.
+  </Step>
+  <Step title="Phase 6: Comprehensive Report">
+    Generate a detailed report saved to the project root. The report includes:
+
+    - **Executive summary**: total files analysed, high-level findings, key risks
+    - **Critical issues**: immediate security or stability blockers with fix examples
+    - **File-by-file findings**: all findings with file paths, line numbers, before/after examples
+    - **Prioritised action plan**: effort estimates (S/M/L/XL), dependencies between tasks, suggested sprint allocation
+    - **Library recommendations**: current location, suggested replacement, migration effort
+    - **Quick wins**: high-impact fixes under 30 minutes
+
+    Provide a brief console summary after saving the report.
+  </Step>
+</Steps>
+
+## Issue Priority Levels
+
+| Priority | Description |
+|---|---|
+| **Critical** | Security vulnerabilities, broken functionality — fix immediately |
+| **High** | Performance bottlenecks, unmaintainable code — fix before next release |
+| **Medium** | Code quality violations, best-practices deviations — fix in upcoming sprint |
+| **Low** | Style inconsistencies, minor improvements — fix opportunistically |
+| **Quick Wins** | High-value fixes under 30 minutes — batch and resolve quickly |
+
+## Analysis Categories
+
+### Security
+- Hardcoded secrets, API keys, passwords
+- SQL injection vulnerabilities
+- XSS (Cross-Site Scripting) risks
+- Command injection and insecure deserialization
+- Missing input validation and exposed sensitive data
+
+### Performance
+- Inefficient algorithms (O(n²) or worse in hot paths)
+- N+1 query patterns
+- Blocking I/O in async contexts
+- Missing caching for expensive operations
+- Large memory allocations inside loops
+
+### TypeScript / Type Safety
+- Missing type annotations and excessive use of `any`
+- Custom types that duplicate official `@types/*` definitions
+- Type assertions that could be avoided with proper generics
+- Missing null and undefined checks
+
+### Async / Promise Issues
+- Missing `await` keywords
+- Unhandled promise rejections
+- Callback-based code that should use async/await
+- Fire-and-forget promises without error handling
+
+### Dead Code Detection
+
+Use automated tools to find unused code before manual review:
+
+```bash
+# JavaScript / TypeScript
+npx knip --reporter json
+
+# Python
+deadcode . --dry
+```
+
+<Warning>
+  Always verify tool findings before reporting. Dead code tools can produce false positives for dynamic imports (`import(variable)`), framework patterns (React components, decorators), re-exports in public APIs, and entry points such as CLI scripts or serverless handlers. Cross-check every flagged item against actual usage.
+</Warning>
+
+## Audit Checklist
+
+**Before starting:**
+- [ ] Read project configuration files
+- [ ] Identify tech stack and libraries
+- [ ] Run existing linters as baseline
+- [ ] Create file tracking list
+
+**During audit:**
+- [ ] Mark files as in-progress while working
+- [ ] Analyse each category systematically
+- [ ] Note specific line numbers for every finding
+- [ ] Document before/after examples
+- [ ] Mark files as completed
+
+**After audit:**
+- [ ] Categorise all findings by priority
+- [ ] Generate comprehensive report
+- [ ] Save report to project root
+- [ ] Provide brief console summary

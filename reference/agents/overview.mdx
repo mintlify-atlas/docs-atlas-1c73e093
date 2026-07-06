@@ -1,0 +1,119 @@
+---
+title: "AI Agent Roles: Pre-Built Experts for Your Coding Workflow"
+sidebarTitle: "Overview"
+description: "Specboot ships three pre-built AI agent role definitions — backend developer, frontend developer, and product analyst — each with expert system prompts and tool configurations."
+---
+
+Specboot ships three pre-built AI agent role definitions, each packaged as a Markdown file with a YAML frontmatter header followed by a detailed system prompt. These files live in `ai-specs/agents/` and are the canonical source of truth for agent configuration. When you add Specboot to a project, Claude and Cursor automatically discover them through symlinks — `.claude/agents/` and `.cursor/agents/` both point back to `ai-specs/agents/` — so every copilot finds the same definitions without duplication.
+
+## What Are AI Agents in Specboot?
+
+An agent file is a single `.md` file with two parts:
+
+- **YAML frontmatter** — declares the agent's `name`, `description`, `model`, `color`, `tools`, and invocation examples that help the orchestrating AI know when to delegate to this agent.
+- **System prompt** — the detailed instructions, expertise areas, development approach, and output rules that shape the agent's behavior during a session.
+
+```
+ai-specs/agents/
+├── backend-developer.md
+├── frontend-developer.md
+└── product-strategy-analyst.md
+```
+
+<Note>
+The `.claude/agents/` and `.cursor/agents/` directories are **relative symlinks** that point to `ai-specs/agents/`. This means you only ever edit files in `ai-specs/agents/` — both IDE integrations pick up changes automatically. After renaming or moving an agent file, always verify that the symlinks remain intact.
+</Note>
+
+## How Agents Are Discovered and Invoked
+
+When you open a project that contains Specboot, Claude Code and Cursor scan the `agents/` folder they are linked to and register each agent automatically. The orchestrating AI reads each agent's `description` field (and its inline `Examples` blocks) to decide when a sub-task should be delegated.
+
+For example, asking *"Create a new interview scheduling feature following DDD"* causes the orchestrating model to route the request to the `backend-developer` agent, because the description and examples in `backend-developer.md` match that intent.
+
+## When to Use Agents vs. Just Chatting
+
+Talking directly to your AI assistant works well for quick questions, small edits, or exploratory conversations. Agents add value when a task:
+
+- Spans **multiple architectural layers** (e.g., domain entity → application service → Express controller)
+- Requires **role-specific expertise** that benefits from a focused, opinionated system prompt
+- Should produce a **durable artifact** (like an implementation plan saved to `.claude/doc/`)
+- Is **complex enough** that generic responses risk missing project-specific patterns
+
+## The Three Included Agents
+
+<CardGroup cols={2}>
+  <Card
+    title="Backend Developer"
+    icon="server"
+    href="/reference/agents/backend-developer"
+  >
+    DDD TypeScript architecture expert. Proposes implementation plans across Domain, Application, Infrastructure, and Presentation layers. Saves plans to `.claude/doc/{feature}/backend.md`.
+  </Card>
+  <Card
+    title="Frontend Developer"
+    icon="browser"
+    href="/reference/agents/frontend-developer"
+  >
+    React component architecture expert. Implements service layers, hooks, React Router, and React Bootstrap patterns. Saves plans to `.claude/doc/{feature}/frontend.md`.
+  </Card>
+  <Card
+    title="Product Strategy Analyst"
+    icon="chart-mixed"
+    href="/reference/agents/product-strategy-analyst"
+  >
+    Ideation and value proposition expert. Uses Sequential Thinking MCP to analyze product ideas, define personas, and develop Jobs-to-be-Done frameworks.
+  </Card>
+  <Card
+    title="Skills Overview"
+    icon="bolt"
+    href="/reference/skills/overview"
+  >
+    Agents automatically load applicable skills from `ai-specs/skills/` when a request matches a skill's description. Learn how skills extend agent capabilities.
+  </Card>
+</CardGroup>
+
+## How Agents Relate to Skills
+
+Agents and skills are complementary. An agent provides a persistent role identity — expertise, architecture principles, output format — while a skill provides a reusable workflow that can be invoked by any agent when it matches the request. According to `base-standards.md` Section 4, an agent loads applicable skills automatically based on the task at hand.
+
+For instance, the `backend-developer` agent might invoke the `code-auditing` skill during a review request, or the `using-git-worktrees` skill before starting a new feature branch.
+
+<Tip>
+Skills live in `ai-specs/skills/` and are mirrored into `.claude/skills/` and `.cursor/skills/` via the same relative symlink pattern used for agents. See the [Skills Overview](/reference/skills/overview) for a full list of available skills.
+</Tip>
+
+## Creating Custom Agents
+
+To add a new agent role to your project:
+
+1. **Copy** an existing agent file as your starting point:
+   ```bash
+   cp ai-specs/agents/backend-developer.md ai-specs/agents/devops-engineer.md
+   ```
+
+2. **Update the YAML frontmatter** with your new agent's identity:
+   ```yaml
+   ---
+   name: devops-engineer
+   description: Use this agent when you need to configure CI/CD pipelines, Docker containers, or infrastructure-as-code. Examples: ...
+   model: sonnet
+   color: orange
+   tools: Bash, Glob, Grep, LS, Read, Edit, Write, WebFetch, WebSearch
+   ---
+   ```
+
+3. **Rewrite the system prompt** with the expertise areas, development approach, output format, and rules specific to your new role.
+
+4. **Verify symlinks** — because `.claude/agents/` and `.cursor/agents/` point to `ai-specs/agents/`, your new file is immediately discoverable without any additional configuration.
+
+The key frontmatter fields to update are:
+
+| Field | Purpose |
+|---|---|
+| `name` | Machine-readable identifier used when routing tasks |
+| `description` | Natural language description + `Examples` blocks that teach the orchestrator when to delegate |
+| `model` | `sonnet` for most tasks, `opus` for deep strategic reasoning |
+| `color` | Visual label color in IDE agent UIs |
+| `tools` | Comma-separated list of tools the agent is allowed to call |
+
+For a deeper look at customizing agents and connecting them to your project's `docs/` context, see the [Customization Guide](/guides/customization).

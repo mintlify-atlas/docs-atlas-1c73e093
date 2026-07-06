@@ -1,0 +1,111 @@
+---
+title: "commit Skill: Create Focused Commits and Pull Requests"
+sidebarTitle: "commit"
+description: "The commit skill stages relevant changes, writes descriptive commit messages following project standards, pushes the branch, and creates or updates a GitHub PR using the gh CLI."
+---
+
+The `commit` skill produces a single, well-described commit from the current working tree state, pushes the branch, and manages the corresponding GitHub Pull Request. It follows repository standards for commit message format, respects scope boundaries when ticket IDs are provided, and handles new and existing remote branches automatically.
+
+## Skill Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `commit` |
+| **Author** | LIDR.co |
+| **Version** | 1.0.0 |
+
+## Three Modes
+
+### 1. Full Commit (no arguments)
+
+Stage and commit all relevant changes in the working tree, then open a single PR.
+
+```
+/commit
+```
+
+### 2. Feature-Scoped Commit (with ticket ID or feature name)
+
+Stage and commit **only** the changes that belong to the specified feature or ticket. All other modified files remain unstaged and are left for a separate commit.
+
+```
+/commit SCRUM-123
+```
+
+If a file contains both feature-related and unrelated changes, the skill uses `git add -p` to stage only the relevant hunks.
+
+### 3. Description-Only / No-Git Mode
+
+Produce the staging plan and commit message without running any git commands. Use this when you want to review or copy the message before committing manually.
+
+Trigger phrases: `"no PR"`, `"only commit"`, `"only description"`, `"don't touch git"`, `"just the message"`, `"dry run"`.
+
+```
+/commit dry run
+```
+
+Output includes the list of files that would be staged and the full proposed commit message in a copy-pasteable block.
+
+## Process
+
+<Steps>
+  <Step title="Detect No-Git Mode">
+    Check whether the user explicitly requested no git operations. If so, perform only steps 1–3 (inspect, resolve scope, write message) and stop. Do not run `git add`, `git commit`, `git push`, or `gh pr create`.
+  </Step>
+  <Step title="Inspect Current State">
+    Run `git status` and `git diff` (and `git diff --staged` if needed) to list all modified, added, and deleted files. Identify the current branch. If not on a feature branch, decide whether to create one from the base branch (`main` or `develop`) before committing.
+  </Step>
+  <Step title="Resolve Scope">
+    - **No arguments**: treat all relevant changes (excluding `.env`, build artifacts, and local config) as the commit scope. Stage all of them.
+    - **Arguments provided**: map each argument to the changes that clearly belong to it — by path, ticket ID in the branch name, or diff context. Stage only those files or hunks. Leave everything else unstaged.
+    - **No matching changes**: report this and do not commit.
+  </Step>
+  <Step title="Write the Commit Message">
+    Compose the commit message in English, following project standards from `docs/base-standards.md`:
+
+    - **Subject line**: short, imperative summary (e.g. `Add candidate filters to position list`). Optionally prefix with a scope or ticket ID (e.g. `SCRUM-123: Add candidate filters`).
+    - **Body** (if needed): bullet points or short paragraphs describing what changed and why. Reference ticket IDs here when relevant.
+
+    Never include secrets, `.env` contents, or other sensitive or generated artifacts.
+  </Step>
+  <Step title="Commit and Push">
+    Create the commit with the composed message. Push the branch to the remote with `git push origin <branch>`. If the branch does not yet exist on the remote, push with `-u` to set the upstream tracking reference.
+  </Step>
+  <Step title="Create or Update the Pull Request">
+    Use the GitHub CLI (`gh`) for all GitHub operations:
+
+    - **Title**: clear, aligned with the commit — include the ticket ID when applicable (e.g. `[SCRUM-123] Add candidate filters to position list`)
+    - **Description**: summarise the change set, link to the ticket if relevant, and note any testing requirements or follow-up items
+    - If the repo uses branch protection or required checks, note that the PR is ready for review once checks pass
+  </Step>
+  <Step title="Report Summary">
+    Report what was committed (files and scope). If arguments were provided, confirm which features or tickets were included and that other changes were left unstaged. Provide the PR URL from the `gh` output.
+  </Step>
+</Steps>
+
+## Commit Message Format
+
+```
+SCRUM-123: Add candidate filters to position list
+
+- Add status, seniority, and skills filters to the position candidates view
+- Extend CandidateFilters component with controlled inputs
+- Add filterCandidates query to PositionRepository
+- Update unit tests for filter logic
+- Refs: SCRUM-123
+```
+
+The subject line is short and imperative. The body uses bullet points to describe the areas touched. Ticket references appear in the body, not in the subject line (unless used as a prefix).
+
+## Rules and Safety Guards
+
+- **No secrets**: never commit `.env` files, API keys, or credentials
+- **No force push** without an explicit user request
+- **No destructive git commands** without confirmation
+- **Conflicts or rejected push**: report the situation and suggest next steps (pull/rebase then push) — do not force-push unless the user asks
+- **Partial staging**: when ticket IDs are provided, only the matching changes are staged; everything else is left untouched in the working tree
+
+## References
+
+- `docs/base-standards.md` — English-only commit messages and technical artifacts
+- `docs/backend-standards.md` and `docs/frontend-standards.md` — Git workflow conventions (feature branches, descriptive commits, small focused changes)

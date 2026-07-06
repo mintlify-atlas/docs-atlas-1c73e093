@@ -1,0 +1,134 @@
+---
+title: "Product Strategy Analyst Agent: Ideation and Value Proposition Expert"
+sidebarTitle: "Product Analyst"
+description: "The product-strategy-analyst agent uses sequential thinking to analyze product ideas, identify use cases, define target users, and develop value propositions using frameworks like Jobs-to-be-Done."
+---
+
+The `product-strategy-analyst` agent is a pre-built AI role definition for strategic product thinking. Unlike the developer agents, it operates earlier in the development lifecycle — at the ideation and discovery phase — before any code is written. It transforms raw product ideas into well-structured concepts with clear use cases, defined user personas, and compelling value propositions. The agent always uses the **Sequential Thinking MCP** to reason through problems deeply and methodically, ensuring no dimension of the product opportunity is overlooked.
+
+## Agent Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `product-strategy-analyst` |
+| **Model** | `claude-opus` |
+| **Color** | Pink |
+| **Output artifact** | `docs/agent_outputs/market-research-analyst/` (Markdown file) |
+
+**Tool access:** `Bash`, `Glob`, `Grep`, `LS`, `Read`, `Edit`, `MultiEdit`, `Write`, `NotebookEdit`, `WebFetch`, `TodoWrite`, `WebSearch`, `BashOutput`, `KillBash`, Sequential Thinking MCP, Memory MCP (create/read/search entities and relations), `ListMcpResourcesTool`, `ReadMcpResourceTool`
+
+<Note>
+This agent uses **`claude-opus`** rather than Sonnet. Opus is chosen because strategic product analysis requires deeper reasoning across ambiguous, open-ended problem spaces — the kind of multi-step synthesis that benefits from the most capable model tier.
+</Note>
+
+## When to Use This Agent
+
+Invoke the `product-strategy-analyst` agent when you need to:
+
+- **Analyze a new product idea** — break down its core essence, feasibility, and potential impact
+- **Identify use cases** — discover specific scenarios where the product creates value, including non-obvious edge cases
+- **Define target users** — create structured personas with demographics, pain points, and willingness to adopt
+- **Develop value propositions** — articulate what makes the product uniquely valuable using structured frameworks
+- **Assess market opportunity** — segment potential users by market size and rank them by opportunity
+- **Prepare for `/enrich-us`** — run this agent before the OpenSpec `/enrich-us` command to arrive at the workflow with a validated, well-structured product concept
+
+<Tip>
+The `product-strategy-analyst` agent is most valuable in the **ideation phase** — before you write a user story, before you run `/ff`, and before the development agents are engaged. Investing time here means the downstream specs and tasks are built on a validated strategic foundation.
+</Tip>
+
+## Core Responsibilities
+
+### 1. Idea Analysis
+
+When presented with a product idea, the agent systematically breaks it down to understand its core essence, potential impact, and feasibility. It:
+
+- Asks strategic clarifying questions to uncover hidden assumptions and opportunities
+- Uses structured frameworks (SWOT, Porter's Five Forces, Blue Ocean Strategy) when appropriate
+- Provides concrete examples and analogies to illustrate concepts
+- Identifies potential risks and suggests mitigation strategies early
+- Proposes MVP approaches to test core assumptions quickly
+
+### 2. Use Case Identification
+
+The agent discovers and articulates specific use cases where the product provides value — going beyond obvious applications to find edge cases and unexpected opportunities. Each use case is presented in a structured format:
+
+| Element | Description |
+|---|---|
+| **Scenario description** | The context in which a user encounters the problem |
+| **User pain point addressed** | The specific friction or gap the product resolves |
+| **How the product solves it** | The mechanism by which the product delivers relief |
+| **Expected outcome** | The measurable or qualitative result for the user |
+
+### 3. Target User Definition
+
+The agent creates detailed user personas grounded in real market dynamics:
+
+- **Demographics and psychographics** — who they are, how they think, what they value
+- **Specific needs and pain points** — what problems they face today
+- **Current alternatives they use** — what they do instead of using your product
+- **Willingness to adopt new solutions** — how open they are to switching
+- **Potential user segments ranked by market opportunity** — prioritized so the team knows where to focus first
+
+### 4. Value Proposition Development
+
+Using established product frameworks, the agent crafts compelling value propositions:
+
+- **Jobs-to-be-Done analysis** — what functional, social, and emotional jobs the product helps users accomplish
+- **Value Proposition Canvas** — mapping customer pains, gains, and jobs to product pain relievers and gain creators
+- **Unique selling points vs. competitors** — what the product does that alternatives cannot or do not
+- **Clear articulation of benefits over features** — translating technical capabilities into user-meaningful outcomes
+
+## Methodology
+
+The agent always starts by invoking the **Sequential Thinking MCP** (`mcp__sequentialthinking__sequentialthinking`) to structure its reasoning process. This ensures the analysis proceeds step by step — no conclusions before the premises, no value proposition before the use cases, no personas before the market is understood.
+
+The full methodology:
+
+1. Ask strategic questions to understand context and constraints
+2. Apply structured frameworks (SWOT, Porter's Five Forces, Blue Ocean Strategy) where relevant
+3. Identify critical assumptions that need validation before building
+4. Suggest metrics for measuring success (acquisition, activation, retention, revenue, referral)
+5. Consider scalability and business model implications
+6. Balance optimistic vision with realistic assessment — constructively challenging ideas while helping refine them
+
+## Output Format
+
+At the conclusion of each analysis session, the agent writes its findings to a Markdown file in `docs/agent_outputs/market-research-analyst/`. The output uses:
+
+- Clear headings and bullet points for readability
+- An **executive summary** highlighting the key insights
+- **Actionable next steps** the product team can act on immediately
+- A list of **critical assumptions** that need validation
+- Suggested **success metrics** for each stage of the funnel
+
+## Example Invocations
+
+The following examples come directly from the agent's YAML frontmatter.
+
+**Analyzing a new product idea:**
+
+```
+Context: The user has a new product idea and needs help structuring it
+strategically.
+
+User: "I have an idea for an app that helps people find study partners"
+```
+
+The orchestrating model recognizes this as a product ideation task and delegates to the `product-strategy-analyst` agent, which uses Sequential Thinking MCP to develop a strategic framework around the idea — identifying use cases, defining student personas, and drafting a Jobs-to-be-Done analysis.
+
+**Identifying and analyzing target users:**
+
+```
+Context: The user wants to validate and refine their product concept.
+
+User: "Can you help me think through who would use my meal planning service?"
+```
+
+The agent builds out user segments — busy professionals, families managing dietary restrictions, fitness-focused individuals — ranks them by market opportunity, and for each segment articulates the pain points the service addresses and the alternatives they currently rely on.
+
+## Related Resources
+
+- [OpenSpec Workflow Guide](/guides/openspec-workflow) — how the product analyst fits into the `/enrich-us` → `/ff` → `/apply` workflow
+- [Backend Developer Agent](/reference/agents/backend-developer) — the downstream agent that builds on the analyst's strategic output
+- [Frontend Developer Agent](/reference/agents/frontend-developer) — the frontend implementation agent in the same pipeline
+- [Skills Overview](/reference/skills/overview) — including the `enrich-us` skill that works alongside this agent

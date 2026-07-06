@@ -1,0 +1,188 @@
+---
+title: "Backend Developer Agent: DDD TypeScript Architecture Expert"
+sidebarTitle: "Backend Developer"
+description: "The backend-developer agent specializes in DDD layered architecture with TypeScript, Express, and Prisma ORM. It proposes implementation plans across Domain, Application, Infrastructure, and Presentation layers."
+---
+
+The `backend-developer` agent is a pre-built AI role definition that acts as an elite TypeScript backend architect. It carries deep expertise in Domain-Driven Design (DDD) layered architecture, Node.js, Express, Prisma ORM, PostgreSQL, and clean code principles. Critically, the agent **never performs implementation directly** — its sole output is a detailed, layer-by-layer implementation plan saved to `.claude/doc/{feature_name}/backend.md`, which a developer or orchestrating agent can then execute step by step.
+
+## Agent Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `backend-developer` |
+| **Model** | `claude-sonnet` |
+| **Color** | Red |
+| **Output artifact** | `.claude/doc/{feature_name}/backend.md` |
+
+**Tool access:** `Bash`, `Glob`, `Grep`, `LS`, `Read`, `Edit`, `MultiEdit`, `Write`, `NotebookEdit`, `WebFetch`, `TodoWrite`, `WebSearch`, `BashOutput`, `KillBash`, Sequential Thinking MCP, Memory MCP (create/read/search entities and relations), Context7 MCP (resolve library IDs and fetch docs), IDE MCP (`getDiagnostics`, `executeCode`), `ListMcpResourcesTool`, `ReadMcpResourceTool`
+
+## Primary Goal
+
+When invoked, the backend-developer agent reads the current feature's session context from `.claude/sessions/context_session_{feature_name}.md` first, then researches the codebase, and produces a complete implementation plan. The final message always includes the path to the plan file so the next agent or developer knows exactly where to look.
+
+<Note>
+The agent operates under a strict rule: **NEVER run `build` or `dev` commands, and NEVER write actual implementation code.** Its job is research and planning only. The parent agent or developer handles building and running the dev server.
+</Note>
+
+## Core Expertise Areas
+
+### 1. Domain Layer
+
+The backend-developer agent designs domain entities as TypeScript classes. Each entity:
+
+- Has a **constructor** that initializes all properties from input data
+- Implements a **`save()` method** that encapsulates persistence logic using Prisma directly on the entity
+- Exposes **static factory methods** (e.g., `findOne()`, `findOneByPositionCandidateId()`) for entity retrieval
+- Encapsulates **business logic and invariants** — entities are framework-agnostic except for their `save()` persistence calls
+- Raises **meaningful domain exceptions** that communicate specific business rule violations
+
+Repository interfaces (e.g., `ICandidateRepository`) are defined in the domain layer and extend a base repository interface, keeping the domain free from infrastructure concerns.
+
+### 2. Application Layer
+
+Application services (e.g., `candidateService.ts`) orchestrate business logic. The agent enforces:
+
+- Services delegate to **domain models and repositories**, never to the Prisma client directly
+- A `validator.ts` module performs **comprehensive input validation** before any processing begins
+- Each service function follows **single responsibility** — one function, one operation
+- Services are implemented as **pure functions or modules** that are straightforward to unit-test
+
+### 3. Infrastructure Layer
+
+The agent uses Prisma ORM as the primary data access layer, accessed through domain model methods rather than directly from services. Key practices:
+
+- **Prisma queries** live inside domain model `save()` methods and static factory methods
+- **Prisma-specific errors** are caught and transformed into domain errors:
+  - `P2002` — unique constraint violation
+  - `P2025` — record not found
+- Relations are loaded efficiently using Prisma's `include` clause
+- All database errors are transformed to meaningful domain errors before surfacing to higher layers
+
+### 4. Presentation Layer
+
+Express controllers are thin handlers. The agent's approach:
+
+- `candidateController.ts` delegates immediately to application services — no business logic in controllers
+- `candidateRoutes.ts` defines RESTful endpoints and wires them to controller methods
+- **HTTP status code mapping** follows a consistent pattern:
+
+  | Status | Meaning |
+  |---|---|
+  | `200` | Successful read or update |
+  | `201` | Successful resource creation |
+  | `400` | Validation error or bad input |
+  | `404` | Resource not found |
+  | `500` | Unexpected server error |
+
+- Route parameters (e.g., IDs from `req.params`) are parsed and validated before passing to services
+- All endpoints go through the application-layer validator
+
+## Development Approach
+
+When implementing a new feature, the agent follows this 8-step process:
+
+<Steps>
+  <Step title="Domain Modeling">
+    Design TypeScript entity classes with constructors, `save()` methods, and static factory methods. Identify the core business concepts and their invariants.
+  </Step>
+  <Step title="Repository Interface Definition">
+    Define `IXxxRepository` interfaces in the domain layer based on what the application services will need. Keep interfaces minimal and intention-revealing.
+  </Step>
+  <Step title="Application Service Implementation">
+    Implement service functions that orchestrate domain objects. Wire in the `validator.ts` module for all input validation before any domain interaction.
+  </Step>
+  <Step title="Domain Model Persistence">
+    Ensure domain models use Prisma for persistence through their own `save()` methods. Services never import `@prisma/client` directly.
+  </Step>
+  <Step title="Presentation Layer">
+    Create Express controllers as thin delegates and route files that define RESTful endpoints with proper HTTP verb and path conventions.
+  </Step>
+  <Step title="Error Handling">
+    Implement comprehensive error handling at each layer: Prisma errors (`P2002`, `P2025`) transform to domain errors, which map to HTTP responses with correct status codes.
+  </Step>
+  <Step title="Unit Tests">
+    Write Jest tests targeting 90% coverage. Tests follow the AAA (Arrange-Act-Assert) pattern with descriptive names, proper mocking of Prisma and dependencies, and coverage across all layers.
+  </Step>
+  <Step title="Prisma Schema Updates">
+    If new entities or relationships are needed, propose the Prisma schema additions or modifications as part of the plan.
+  </Step>
+</Steps>
+
+## Code Review Criteria
+
+When the agent is asked to review existing backend code, it checks:
+
+- Domain entities validate state and enforce invariants in constructors
+- Entities have `save()` methods that handle Prisma operations (not services)
+- Entities expose static factory methods (e.g., `findOne()`) for retrieval
+- Application services follow single responsibility and use validators for all input
+- Repository interfaces define clear, minimal contracts in the domain layer
+- Services never import Prisma client directly — all persistence goes through domain models
+- Controllers are thin and delegate immediately to services
+- Express routes correctly define RESTful endpoints
+- Error handling follows the domain-to-HTTP mapping pattern (400, 404, 500)
+- Prisma errors are caught and transformed to meaningful domain errors
+- TypeScript strict typing is used throughout (no `any`, no implicit types)
+- Tests follow project standards: Jest, AAA pattern, descriptive names, 90% coverage threshold
+
+## Output Format
+
+The agent's final message always references the plan file it created:
+
+```
+I've created a plan at `.claude/doc/{feature_name}/backend.md`, please read
+that before you proceed. Key notes: [any critical implementation details the
+developer may have missed due to outdated knowledge].
+```
+
+The plan file at `.claude/doc/{feature_name}/backend.md` contains:
+
+- A list of every file to create or modify
+- The exact content or structural changes for each file
+- Important implementation notes, edge cases, and Prisma schema changes
+- Test strategy and coverage targets
+
+## Example Invocations
+
+The following examples come directly from the agent's YAML frontmatter and illustrate when the orchestrating AI should delegate to this agent.
+
+**Implementing a new feature across DDD layers:**
+
+```
+Context: The user needs to implement a new feature in the backend following
+DDD layered architecture.
+
+User: "Create a new interview scheduling feature with domain entity, service,
+      and repository"
+```
+
+The orchestrating model notes that this involves creating backend components across multiple layers following specific architectural patterns, making `backend-developer` the right agent to delegate to.
+
+**Reviewing recently written backend code:**
+
+```
+Context: The user has just written backend code and wants architectural review.
+
+User: "I've added a new candidate application service, can you review it?"
+```
+
+The agent analyzes the service against DDD architectural standards — checking layer separation, validator usage, domain model delegation, and test coverage.
+
+**Guiding a Prisma repository implementation:**
+
+```
+Context: The user needs help with repository implementation.
+
+User: "How should I implement the Prisma repository for the
+      CandidateRepository interface?"
+```
+
+This involves infrastructure layer implementation following the repository pattern with Prisma, which is the `backend-developer` agent's core specialty.
+
+## Related Resources
+
+- [Frontend Developer Agent](/reference/agents/frontend-developer) — counterpart agent for React component architecture
+- [Skills Overview](/reference/skills/overview) — reusable workflows the backend agent can invoke
+- [Base Standards](/standards/base-standards) — core principles (TDD, type safety, 90% coverage) that shape the agent's review criteria
+- [Project Structure](/concepts/project-structure) — how `ai-specs/agents/`, `.claude/`, and `docs/` relate to each other

@@ -1,0 +1,140 @@
+---
+title: "lidr-specboot CLI Reference: Bootstrap Commands and Options"
+sidebarTitle: "CLI Reference"
+description: "Reference for the lidr-specboot command. Copies Specboot templates and creates copilot config symlinks in any project directory. Node.js 18+ required."
+---
+
+`lidr-specboot` is the bootstrap command for Specboot — it copies a complete set of development standards, agent role definitions, and reusable skill prompts into any project directory and wires up symbolic links so every supported AI copilot can discover them immediately. It is safe to re-run at any time: files that already exist are skipped, never overwritten.
+
+## Command
+
+<CodeGroup>
+
+```bash npx (no install required)
+npx @lidr/lidr-specboot [target-dir]
+```
+
+```bash Global install
+npm install -g @lidr/lidr-specboot
+lidr-specboot [target-dir]
+```
+
+</CodeGroup>
+
+## Arguments
+
+<ParamField path="target-dir" type="string">
+  Path to the target project directory. Accepts an absolute or relative path. Defaults to the current working directory (`process.cwd()`) when omitted.
+</ParamField>
+
+## What the command does
+
+When invoked, `lidr-specboot` performs the following steps in order:
+
+1. **Copies the template directory.** The entire bundled `template/` directory is copied recursively into the target directory. Any file that already exists at the destination is skipped. `.DS_Store` files are always skipped.
+2. **Creates root-level copilot config symlinks.** Four symlinks are created in the project root, each pointing to `docs/base-standards.md` — the single source of truth for your development standards:
+   - `CLAUDE.md`
+   - `AGENTS.md`
+   - `codex.md`
+   - `GEMINI.md`
+3. **Reads the installed agent and skill lists.** The command reads the contents of `template/ai-specs/agents/` and `template/ai-specs/skills/` to discover which agents and skills were just copied.
+4. **Creates per-tool agent and skill symlinks.** For each tool directory (`.claude` and `.cursor`), relative symlinks are created for every agent and every skill:
+   - `{tool}/agents/{agent}` → `../../ai-specs/agents/{agent}`
+   - `{tool}/skills/{skill}` → `../../ai-specs/skills/{skill}`
+5. **Prints a summary** showing counts of files copied, symlinks created, and items skipped.
+6. **Prints next steps** to guide you through finishing the setup.
+
+<Note>
+  The command is fully idempotent. If you run it again in a project that already has Specboot installed, every existing file and symlink is skipped and the counts reflect only what was actually created this run. Nothing is ever overwritten.
+</Note>
+
+## Output format
+
+After running, the command prints a summary to stdout:
+
+```text
+  lidr-specboot
+  Augmented Spec-driven development powered by OpenSpec
+
+  Target: /path/to/your/project
+
+  Files copied  N
+  Symlinks      N
+  Skipped       N
+
+  Next steps:
+  1. Update docs/ to match your project (stack, API, data model)
+  2. openspec init
+  3. /enrich-us  ->  /ff  ->  /apply
+```
+
+## Exit behavior
+
+The command completes regardless of individual symlink errors. If one or more symlinks cannot be created (for example, due to a permissions issue), the error is recorded and reported at the end of the output without stopping the rest of the installation:
+
+```text
+  Errors (1):
+    ! .claude/agents/backend-developer.md: EACCES: permission denied
+```
+
+The errors array is only printed when it contains at least one entry.
+
+## Files installed
+
+The following paths are created in the target directory:
+
+| Path | Description |
+|------|-------------|
+| `docs/` | Development standards documents — customize these for your project |
+| `ai-specs/agents/` | Agent role definitions (backend developer, frontend developer, analyst, etc.) |
+| `ai-specs/skills/` | Reusable skill prompts and workflows |
+| `ai-specs/scripts/` | Utility scripts |
+| `CLAUDE.md` | Symlink → `docs/base-standards.md` |
+| `AGENTS.md` | Symlink → `docs/base-standards.md` |
+| `codex.md` | Symlink → `docs/base-standards.md` |
+| `GEMINI.md` | Symlink → `docs/base-standards.md` |
+| `.claude/agents/{name}` | Symlink → `../../ai-specs/agents/{name}` (one per agent) |
+| `.claude/skills/{name}` | Symlink → `../../ai-specs/skills/{name}` (one per skill) |
+| `.cursor/agents/{name}` | Symlink → `../../ai-specs/agents/{name}` (one per agent) |
+| `.cursor/skills/{name}` | Symlink → `../../ai-specs/skills/{name}` (one per skill) |
+| `.cursor/rules/use-base-rules.mdc` | Cursor rules integration file |
+
+## After installation
+
+<Steps>
+  <Step title="Customize docs/ for your project">
+    The `docs/` directory contains generic reference examples. Replace the content in `docs/base-standards.md`, `docs/backend-standards.md`, `docs/frontend-standards.md`, `docs/api-spec.yml`, and `docs/data-model.md` with your project's real stack, architecture patterns, domain language, and API contracts. This step is required — skipping it means your AI assistant will work from generic context instead of your actual project.
+  </Step>
+  <Step title="Initialize OpenSpec">
+    Run `openspec init` in your project directory to create the OpenSpec configuration. Then update `config.yml` to reference the `docs/` and `ai-specs/` paths that Specboot just installed.
+  </Step>
+  <Step title="Run the spec-driven workflow">
+    Use the recommended command sequence with your AI copilot:
+
+    ```bash
+    /enrich-us   # Refine a vague user story (optional)
+    /ff          # Create all OpenSpec artifacts
+    /apply       # Implement tasks one by one
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  `lidr-specboot` does **not** install OpenSpec. Install it separately before running `openspec init`:
+
+  ```bash
+  npm install -g @fission-ai/openspec@latest
+  ```
+
+  OpenSpec requires Node.js `20.19.0` or higher. See the [OpenSpec documentation](https://github.com/Fission-AI/OpenSpec) for full setup instructions.
+</Warning>
+
+## Requirements
+
+| Requirement | Value |
+|-------------|-------|
+| Node.js | `>=18` |
+| Package name | `@lidr/lidr-specboot` |
+| Version | `0.1.0` |
+| Binary | `lidr-specboot` |
+| License | MIT |

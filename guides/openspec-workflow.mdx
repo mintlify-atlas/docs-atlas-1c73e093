@@ -1,0 +1,159 @@
+---
+title: "OpenSpec Workflow: From User Story to Merged PR"
+sidebarTitle: "OpenSpec Workflow"
+description: "Walk through Specboot's full spec-driven development loop: enrich user stories, generate feature artifacts, implement tasks, verify, review, archive, and commit."
+---
+
+Specboot's OpenSpec workflow gives every user story a deterministic, artifact-first path to a merged pull request. Rather than jumping straight to code, the workflow ensures that planning, implementation, verification, and review each happen in the right order — with OpenSpec managing the artifacts that bind them together. The result is traceable, reviewable changes where documentation is always the source of truth.
+
+## Prerequisites
+
+Before running the workflow, make sure you have:
+
+- **OpenSpec installed globally:**
+  ```bash
+  npm install -g @fission-ai/openspec@latest
+  ```
+- **Node.js `20.19.0` or higher** (required by OpenSpec)
+- **Specboot bootstrapped** into your project — see [Quickstart](/quickstart) if you haven't done this yet
+- **`docs/` customized** for your stack — generic context produces generic output; see [Customization](/guides/customization)
+
+## Recommended Pre-Step: Create a Git Worktree
+
+Before running the full command sequence, it is strongly recommended to create a dedicated git worktree for the feature. This keeps your main branch untouched and gives the AI an isolated workspace to operate in.
+
+The `using-git-worktrees` skill handles this automatically. When you start a new feature, ask your copilot to run the skill:
+
+```text
+Use the using-git-worktrees skill to set up an isolated workspace for SCRUM-10.
+```
+
+The skill will detect existing isolation, create a worktree under `.worktrees/<branch-name>`, copy your Claude settings, run project setup, and verify a clean test baseline before you begin. Once the feature is merged and the PR is closed, run the cleanup phase of the same skill to remove the worktree and delete the local branch.
+
+## The 7-Step OpenSpec Workflow
+
+<Steps>
+  <Step title="/enrich-us SCRUM-10 (optional)">
+    Refine a vague user story into an implementation-ready ticket before planning begins. The `enrich-us` skill acts as a product expert: it validates that the story includes a full functionality description, required endpoints, files to modify, acceptance criteria, non-functional requirements, and a definition of done.
+
+    - **Direct input mode (default):** Paste the full ticket text into the chat — no Jira connection needed.
+    - **Jira mode (optional):** Pass a Jira ticket ID (e.g., `SCRUM-10`) and the skill will fetch the ticket via Jira MCP automatically.
+
+    The skill always returns two sections: `## Original` and `## Enhanced`. In Jira mode it also writes the enhanced version back to the ticket.
+
+    Use this step whenever a story lacks enough technical detail for autonomous implementation. Skip it only when the story is already fully specified.
+
+    <Note>
+      `/enrich-us` requires Claude Opus in high-reasoning mode. See the [Planning Model](#planning-model-requirement) section below.
+    </Note>
+  </Step>
+
+  <Step title="/new or /ff SCRUM-10 — Generate OpenSpec artifacts">
+    Create all required OpenSpec artifacts for the change: the feature file (Gherkin scenarios), task list (`tasks.md`), and supporting specs. Running `/new` followed by `/ff` is equivalent to the newer `/propose` command.
+
+    - `/new` — creates a new OpenSpec change entry
+    - `/ff SCRUM-10` — generates the full artifact set from the enriched story
+
+    These artifacts become the contract for the rest of the workflow. Every subsequent step — implementation, verification, and review — validates against them.
+
+    <Note>
+      `/ff` (and `/new`) require Claude Opus in high-reasoning mode. See the [Planning Model](#planning-model-requirement) section below.
+    </Note>
+  </Step>
+
+  <Step title="/apply SCRUM-10 — Implement tasks">
+    Implement the tasks in `tasks.md` one by one, following the small-tasks-one-at-a-time principle from `docs/base-standards.md`. The agent writes failing tests first (TDD), implements code to pass them, and moves to the next task only after the current one is complete.
+
+    The agent adopts the relevant role from `ai-specs/agents/` (e.g. `backend-developer.md` for backend work) and reads all applicable standards from `docs/` before writing any code.
+
+    <Warning>
+      If you or a reviewer request a fix or change **after `/apply` but before `/archive`**, do not apply it as a direct code-only patch. See the [Mandatory Spec Update Rule](#mandatory-spec-update-rule-for-post-apply-changes) below.
+    </Warning>
+  </Step>
+
+  <Step title="/verify SCRUM-10 — Validate implementation">
+    Validate the completed implementation against the OpenSpec artifacts — feature file scenarios, requirements, and tasks. The verify step checks that every acceptance criterion is met, all tests pass, and there are no regressions.
+
+    For user-facing features, this step also leverages the Playwright MCP (if configured) to run browser-based end-to-end checks. Testing reports are stored in the OpenSpec change directory.
+  </Step>
+
+  <Step title="/adversarial-review SCRUM-10 — Red-team code review">
+    Run an independent adversarial review of the implementation before archiving. The agent takes the perspective of a skeptical reviewer looking for logic errors, security issues, performance problems, edge cases, and deviations from project standards — concerns that the implementing agent may have missed.
+
+    This step is separate from `/verify` intentionally: verification checks correctness against specs; adversarial review challenges the specs and implementation together.
+  </Step>
+
+  <Step title="/archive SCRUM-10 — Archive the change">
+    Archive the completed change. OpenSpec moves the feature artifacts, testing reports, and change metadata into the archive directory. The change is now considered complete and ready to commit.
+
+    Archiving closes the spec loop — after this step, the artifacts are locked and the commit step begins.
+  </Step>
+
+  <Step title="/commit — Create commit and manage PR">
+    Create a focused, descriptive commit for the change and open (or update) a Pull Request. The `commit` skill handles the full flow:
+
+    1. Inspects `git status` and `git diff` to determine scope
+    2. Stages the relevant files (or only the files tied to a given ticket if scoped)
+    3. Writes a conventional commit message — imperative subject line, descriptive body, ticket reference
+    4. Pushes the branch and creates the PR via the GitHub CLI (`gh`)
+
+    The PR title and description are automatically derived from the commit and the OpenSpec change. If you only want the commit message without running git commands, pass a "dry run" or "no PR" instruction to the skill.
+  </Step>
+</Steps>
+
+## Full Command Sequence
+
+```bash
+/enrich-us SCRUM-10
+/ff SCRUM-10
+/apply SCRUM-10
+/verify SCRUM-10
+/adversarial-review SCRUM-10
+/archive SCRUM-10
+/commit
+```
+
+## Mandatory Spec Update Rule for Post-Apply Changes
+
+<Warning>
+  When a new fix or change request arrives **after `/apply`** (or `opsx:apply`) **and before `/archive`** (or `opsx:archive`), treat it as a spec update — not as a quick inline fix. This is a core principle of spec-driven development: documentation is always the source of truth.
+
+  **Required order:**
+  1. Update the OpenSpec change artifacts that are affected — scenarios, requirements/specs, and `tasks.md`. Add items in the proper section; do not append "bugfix" tasks at the end.
+  2. If artifact regeneration is needed, run the corresponding OpenSpec step (`opsx:continue`, `opsx:ff`, or equivalent) before writing any code.
+  3. Implement code only after the artifacts reflect the new request.
+  4. Re-run `/verify` against the updated artifacts before archiving.
+
+  Do not apply direct code-only fixes in this window without first updating the OpenSpec artifacts. Skipping this rule breaks the traceability chain and violates the spec-driven contract.
+</Warning>
+
+## Planning Model Requirement
+
+<Note>
+  The `/enrich-us` and `/ff` (feature file) steps are planning workflows and **must run with Claude Opus in high-reasoning mode**. Before starting either workflow, the agent verifies it is using `claude-opus-4-7`. If it is not, it self-corrects by adding `"model": "claude-opus-4-7"` to `.claude/settings.json` — it does not stop and ask.
+
+  After planning is complete (i.e., for `/apply`, `/verify`, `/adversarial-review`, `/archive`, and `/commit`), the model returns to Sonnet medium automatically. You do not need to manage this manually.
+</Note>
+
+## Skill Transparency: show-spec-working
+
+For full visibility into what the agent is doing at each step, you can use the `show-spec-working` approach: ask your copilot to narrate which skill or artifact it is reading before executing each step. This is especially useful when onboarding a new team member to the workflow, debugging a step that produced unexpected output, or auditing the agent's reasoning during a complex `/apply` run.
+
+Skills live in `ai-specs/skills/` and are mirrored into `.claude/skills/` and `.cursor/skills/` via relative symlinks, so any copilot can discover and load them. The agent loads a skill automatically when a request matches its description, as defined in `AGENTS.md` §4.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Customization" href="/guides/customization">
+    Adapt docs/ and ai-specs/ to your real project stack so every workflow step uses accurate context.
+  </Card>
+  <Card title="MCP Integrations" href="/guides/mcp-integrations">
+    Connect Jira and Playwright MCPs to enhance /enrich-us and /verify with live data.
+  </Card>
+  <Card title="enrich-us Skill" href="/reference/skills/enrich-us">
+    Full reference for the enrich-us skill — input modes, output format, and Jira write-back.
+  </Card>
+  <Card title="commit Skill" href="/reference/skills/commit">
+    Full reference for the commit skill — scoped commits, PR creation, and dry-run mode.
+  </Card>
+</CardGroup>

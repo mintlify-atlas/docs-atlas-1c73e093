@@ -1,0 +1,112 @@
+---
+title: "enrich-us Skill: Refine User Stories for AI Implementation"
+sidebarTitle: "enrich-us"
+description: "The enrich-us skill analyzes and enhances vague user stories into implementation-ready tickets with acceptance criteria, technical detail, and edge cases. Works with direct input or Jira."
+---
+
+The `enrich-us` skill transforms incomplete or vague user stories into fully specified, implementation-ready tickets. It acts as a product expert with technical depth, closing the gap between a rough idea and a story an AI agent can implement autonomously without ambiguity.
+
+## Skill Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `enrich-us` |
+| **Author** | LIDR.co |
+| **Version** | 1.0.0 |
+
+## When to Use
+
+Run `enrich-us` before `/ff` or any implementation command to ensure the AI has complete specification context. A well-enriched ticket means the agent can implement the feature end-to-end without needing to ask clarifying questions mid-session.
+
+<Tip>
+  When Jira is unavailable or you prefer not to connect an MCP server, use **direct input mode**: paste the full ticket text into the chat and the skill will work entirely from that content. Jira mode is optional.
+</Tip>
+
+## Two Input Modes
+
+### 1. Direct Input Mode (Default)
+
+Provide the full ticket content directly in the prompt or chat. The skill uses that text as the source of truth. No external connections are needed.
+
+```
+/enrich-us
+[paste the full ticket text here]
+```
+
+### 2. Jira Mode (Optional)
+
+Provide a Jira ticket ID or key. The skill fetches the ticket details via the Jira MCP server, enriches the content, and can optionally write the enhanced version back to Jira.
+
+```
+/enrich-us SCRUM-42
+```
+
+If the input is ambiguous — for example, a short reference without ticket content — the skill will ask whether to resolve it via Jira or request the full ticket text directly.
+
+## Step-by-Step Process
+
+<Steps>
+  <Step title="Determine Input Source">
+    Inspect `$ARGUMENTS`. If ticket text is provided directly, use direct input mode. If a Jira ID or key is given (or the user references "the one in progress"), switch to Jira mode and fetch ticket details via the Jira MCP server.
+  </Step>
+  <Step title="Act as Product Expert">
+    Adopt the role of a product expert with technical knowledge. Read the ticket with the goal of understanding the problem being solved, not just the words on the page.
+  </Step>
+  <Step title="Understand the Problem">
+    Analyse the described functionality, the expected outcome, and the business context. Identify what is clear and what requires elaboration.
+  </Step>
+  <Step title="Validate Completeness">
+    Decide whether the user story contains enough technical detail for autonomous implementation. Check for all of the following:
+    - Full functionality description
+    - Comprehensive list of fields to update
+    - Required endpoints — structure and URLs
+    - Files and modules to modify according to architecture and best practices
+    - Definition of done (implementation and delivery steps)
+    - Documentation and unit test updates
+    - Non-functional requirements: security, performance, observability, etc.
+  </Step>
+  <Step title="Produce an Improved Version">
+    If the story lacks sufficient detail, generate an enhanced version that is clearer, more specific, and concise. Use project technical context from `@documentation` to align with the real codebase — architecture, existing endpoints, naming conventions, and patterns.
+  </Step>
+  <Step title="Output Both Sections">
+    Always return the result with both the original and the enhanced versions clearly separated. See the output format below.
+  </Step>
+  <Step title="Optional Jira Write-Back (Jira Mode Only)">
+    In Jira mode, optionally update the Jira ticket by appending the enhanced content after the original. Use `h2` headings `[original]` and `[enhanced]` with readable formatting (lists and code snippets where useful). If the ticket status is `To refine`, transition it to `Pending refinement validation`.
+  </Step>
+</Steps>
+
+## Output Format
+
+The skill always produces two sections:
+
+```markdown
+## Original
+
+[The original ticket content, unmodified]
+
+## Enhanced
+
+[The improved version with full technical detail, acceptance criteria, endpoints,
+files to modify, definition of done, test requirements, and NFRs]
+```
+
+## Requirements
+
+- **High-reasoning mode**: Use this skill with an Opus or equivalent high-reasoning model. Base-standards.md Section 5 specifies model selection guidelines for tasks that require deep technical analysis.
+- **Project context**: The skill reads `@documentation` to align the enhanced ticket with your real architecture, so having an up-to-date `docs/` folder improves output quality significantly.
+- **Jira MCP** *(optional)*: Required only for Jira mode. If you don't have the Jira MCP configured, use direct input mode instead.
+
+## Example Usage in the OpenSpec Workflow
+
+The `enrich-us` skill sits at the beginning of the OpenSpec command flow:
+
+```bash
+/enrich-us SCRUM-10   # Enrich the story first
+/ff SCRUM-10          # Create OpenSpec artifacts
+/apply SCRUM-10       # Implement tasks
+/verify SCRUM-10      # Validate implementation
+/commit               # Create PR
+```
+
+Running enrichment before `/ff` ensures that the feature file, tasks, and acceptance criteria are generated from a fully specified story rather than a vague one.

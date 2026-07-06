@@ -1,0 +1,148 @@
+---
+title: "Install Specboot: CLI Bootstrap for AI Development Standards"
+sidebarTitle: "Installation"
+description: "Install Specboot via npx or copy manually into your project. Node.js 18+ required. Existing files are never overwritten."
+---
+
+Specboot installs as a project-level bootstrap, not as a permanent global dependency. Run it once inside your project and it copies all template files, wires up the multi-copilot symlinks, and exits — leaving behind a self-contained directory structure you own and version-control alongside your code.
+
+## Requirements
+
+- **Node.js `>=18`** — required by the `@lidr/lidr-specboot` package (`engines.node` field in `package.json`). Node.js 20.19.0 or higher is recommended if you also plan to use OpenSpec.
+- **npm `npx`** — included with all npm installations; no separate install needed.
+- An existing project directory. Specboot copies files into it; it does not scaffold a new project from scratch.
+
+## Installation Methods
+
+<CodeGroup>
+  ```bash npx (recommended)
+  # Run from inside your project directory
+  npx @lidr/lidr-specboot
+  ```
+
+  ```bash npx with target directory
+  # Run from anywhere, targeting a specific project path
+  npx @lidr/lidr-specboot /path/to/your/project
+  ```
+
+  ```bash Manual copy
+  # Clone the repository, then copy files (skips existing files with -n)
+  cp -rn lidr-specboot/* your-project/
+
+  # Then manually create the copilot symlinks
+  cd your-project
+  ln -s docs/base-standards.md CLAUDE.md
+  ln -s docs/base-standards.md AGENTS.md
+  ln -s docs/base-standards.md codex.md
+  ln -s docs/base-standards.md GEMINI.md
+  ```
+</CodeGroup>
+
+**Method 1 — `npx` (recommended):** Fetches the latest published package from npm, copies the full template into the current working directory, and automatically creates all symlinks. No global install required. Safe to run more than once.
+
+**Method 2 — `npx` with a target directory:** Identical to Method 1, but you specify the destination path as an argument instead of `cd`-ing into it first. Useful in scripts or CI bootstrapping.
+
+**Method 3 — Manual copy:** Use this when you need offline installation or want to inspect the files before they land in your project. The `-n` flag in `cp` prevents overwriting any files that already exist. After copying, create the four copilot symlinks by hand as shown above, then mirror `ai-specs/agents/` and `ai-specs/skills/` into `.claude/` and `.cursor/` using relative symlinks (see [Symlink Structure](#symlink-structure) below).
+
+## What Gets Installed
+
+After a successful run, your project will contain:
+
+```
+your-project/
+├── docs/
+│   ├── base-standards.md           # Core dev rules — single source of truth
+│   ├── backend-standards.md        # API, database, security, testing
+│   ├── frontend-standards.md       # React, UI/UX, state management
+│   ├── documentation-standards.md  # Doc structure, formatting, AI standards
+│   ├── api-spec.yml                # OpenAPI 3.0 reference spec
+│   ├── data-model.md               # Database schemas and domain models
+│   └── development_guide.md        # Setup and workflow guide
+├── ai-specs/
+│   ├── agents/                     # Agent role definitions
+│   │   ├── backend-developer.md
+│   │   ├── frontend-developer.md
+│   │   └── ...
+│   └── skills/                     # Reusable skill workflows (SKILL.md files)
+│       ├── enrich-us/
+│       ├── using-git-worktrees/
+│       ├── code-auditing/
+│       └── ...
+├── AGENTS.md  -> docs/base-standards.md
+├── CLAUDE.md  -> docs/base-standards.md
+├── codex.md   -> docs/base-standards.md
+└── GEMINI.md  -> docs/base-standards.md
+```
+
+## Symlink Structure
+
+Specboot creates two layers of symbolic links so every supported copilot can discover agents and skills using the paths it already expects.
+
+**Layer 1 — Copilot configuration files (project root)**
+
+The four root-level configuration files are symlinks pointing to `docs/base-standards.md`:
+
+```
+CLAUDE.md  -> docs/base-standards.md
+AGENTS.md  -> docs/base-standards.md
+codex.md   -> docs/base-standards.md
+GEMINI.md  -> docs/base-standards.md
+```
+
+All copilots read the same rules from one file. Update `base-standards.md` once and every tool benefits.
+
+**Layer 2 — Agent and skill discovery (`.claude/` and `.cursor/`)**
+
+Each agent and skill in `ai-specs/` is mirrored into `.claude/` and `.cursor/` via relative symlinks so tool-specific UIs can discover them without duplicating files:
+
+```
+.claude/agents/<agent>  -> ../../ai-specs/agents/<agent>
+.claude/skills/<skill>  -> ../../ai-specs/skills/<skill>
+.cursor/agents/<agent>  -> ../../ai-specs/agents/<agent>
+.cursor/skills/<skill>  -> ../../ai-specs/skills/<skill>
+```
+
+`ai-specs/` is always the **canonical source**. Never edit the files inside `.claude/` or `.cursor/` directly — edit the originals in `ai-specs/` and the symlinks reflect changes automatically.
+
+## Safe Re-Run Behavior
+
+<Note>
+Specboot is **idempotent**. If you run `npx @lidr/lidr-specboot` a second time in a project that already has Specboot installed, every file and symlink that already exists is **skipped** — nothing is overwritten, nothing is deleted. The summary output shows a `Skipped` count so you can confirm no changes were made unexpectedly. This makes it safe to run in CI or to use as a verification step after a merge.
+</Note>
+
+## Verify the Installation
+
+After running Specboot, confirm the symlinks are correctly in place:
+
+```bash
+# Check the four root-level copilot symlinks
+ls -la CLAUDE.md AGENTS.md codex.md GEMINI.md
+```
+
+Expected output:
+
+```
+AGENTS.md -> docs/base-standards.md
+CLAUDE.md -> docs/base-standards.md
+GEMINI.md -> docs/base-standards.md
+codex.md  -> docs/base-standards.md
+```
+
+```bash
+# Verify the .claude skill and agent symlinks
+ls -la .claude/agents/
+ls -la .claude/skills/
+```
+
+```bash
+# Confirm docs/ and ai-specs/ directories were created
+ls docs/
+ls ai-specs/agents/
+ls ai-specs/skills/
+```
+
+If any symlink points to a missing target (shown as a broken link in `ls -la`), re-run `npx @lidr/lidr-specboot` — it will create any missing links while skipping everything that already exists.
+
+<Warning>
+**Customizing `docs/` is mandatory.** The files installed by Specboot are generic reference examples from the LIDR project. Before using Specboot with any AI copilot, you must update `docs/base-standards.md` and the companion standards files to reflect your project's real tech stack, architecture patterns, domain language, API contracts, and data models. Skipping this step means every AI agent operates on incorrect context and will produce code that does not match your project. See the [Customization Guide](/guides/customization) for step-by-step instructions and ready-to-use prompts.
+</Warning>

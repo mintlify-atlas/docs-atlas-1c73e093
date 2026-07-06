@@ -1,0 +1,625 @@
+---
+title: "Backend Development Standards for AI-Assisted TypeScript Projects"
+sidebarTitle: "Backend Standards"
+description: "Standards for TypeScript backend development with DDD layered architecture, Prisma ORM, Express, testing requirements, and security guidelines used by the backend-developer agent."
+---
+
+These standards govern all backend development in Specboot-managed projects. The backend follows Domain-Driven Design (DDD) principles and a layered architecture to ensure consistency, maintainability, and scalability. They apply to any AI agent working across the `backend/src/`, `backend/prisma/`, and related configuration files.
+
+## Technology Stack
+
+### Core Technologies
+
+| Technology | Purpose |
+|------------|---------|
+| **Node.js** | Runtime environment |
+| **TypeScript** (strict mode) | Type-safe development |
+| **Express.js** | Web application framework |
+| **Prisma** | Modern ORM for database access |
+| **PostgreSQL** | Relational database (Docker container) |
+
+### Testing & Tooling
+
+- **Jest** — testing framework with TypeScript support; 90% coverage threshold across branches, functions, lines, and statements
+- **ESLint** — code linting
+- **Serverless Framework** — AWS Lambda deployment support
+
+## Architecture Overview
+
+### Domain-Driven Design (DDD)
+
+DDD centers development around business logic and domain knowledge, producing models that accurately reflect real business rules. The key benefits are a common language between developers and domain experts, clear domain boundaries, and high maintainability through subdomain isolation.
+
+### Layered Architecture
+
+```
+Presentation Layer  (src/presentation/)
+       ↓  uses
+Application Layer   (src/application/)
+       ↓  uses
+Domain Layer        (src/domain/)
+       ↓  implemented by
+Infrastructure Layer (Prisma, src/infrastructure/)
+```
+
+| Layer | Path | Responsibility |
+|-------|------|----------------|
+| **Presentation** | `src/presentation/` | Controllers handle HTTP requests/responses; routes define API endpoints |
+| **Application** | `src/application/` | Services contain business logic and orchestration; `validator.ts` handles input validation |
+| **Domain** | `src/domain/` | Models define core business entities; repository interfaces define data access contracts |
+| **Infrastructure** | `src/infrastructure/` | Prisma ORM implementations; logger; Prisma client setup |
+
+### Project Structure
+
+```
+backend/
+├── src/
+│   ├── domain/
+│   │   ├── models/          # Domain entities
+│   │   └── repositories/    # Repository interfaces
+│   ├── application/
+│   │   ├── services/        # Business logic services
+│   │   └── validator.ts     # Input validation
+│   ├── presentation/
+│   │   └── controllers/     # HTTP request handlers
+│   ├── infrastructure/
+│   │   ├── logger.ts        # Logging utilities
+│   │   └── prismaClient.ts  # Prisma client setup
+│   ├── routes/              # Express route definitions
+│   ├── middleware/          # Express middleware
+│   ├── index.ts             # Application entry point
+│   └── lambda.ts            # AWS Lambda handler
+├── prisma/
+│   ├── schema.prisma        # Database schema
+│   └── migrations/          # Database migrations
+├── test-utils/
+│   ├── builders/            # Test data builders
+│   └── mocks/               # Mock helpers
+├── jest.config.js
+├── tsconfig.json
+├── serverless.yml
+└── package.json
+```
+
+## Domain-Driven Design Principles
+
+### Entities
+
+Entities are objects with a distinct identity that persists over time. Use classes to encapsulate business logic and maintain consistency of internal state.
+
+```typescript
+export class Candidate {
+    id?: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+
+    constructor(data: any) {
+        this.id = data.id;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.email = data.email;
+    }
+}
+```
+
+`Candidate` is an entity because its unique `id` distinguishes it from all other candidates, even if all other properties are identical.
+
+### Value Objects
+
+Value objects describe aspects of the domain without conceptual identity — they are defined by their attributes, not an identifier.
+
+```typescript
+export class Education {
+    institution: string;
+    title: string;
+    startDate: Date;
+    endDate?: Date;
+
+    constructor(data: any) {
+        this.institution = data.institution;
+        this.title = data.title;
+        this.startDate = new Date(data.startDate);
+        this.endDate = data.endDate ? new Date(data.endDate) : undefined;
+    }
+}
+```
+
+<Note>
+  Classes like `Education` and `WorkExperience` currently carry unique identifiers, making them entities in practice. Consider removing those identifiers — or embedding them inside the `Candidate` document — if using a NoSQL store where they should behave as true value objects.
+</Note>
+
+### Aggregates
+
+Aggregates are clusters of objects treated as a unit, with a root entity that enforces invariants and consistency boundaries.
+
+```typescript
+export class Candidate {
+    id?: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    educations: Education[];
+
+    constructor(data: any) {
+        this.id = data.id;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.email = data.email;
+        this.educations = data.educations?.map(edu => new Education(edu)) || [];
+    }
+}
+```
+
+`Candidate` is the aggregate root that contains `Education`, `WorkExperience`, `Resume`, and `Application`. Operations affecting nested objects must be handled through the aggregate root to maintain integrity.
+
+### Repositories
+
+Repositories provide interfaces for accessing aggregates and entities, fully encapsulating data access logic.
+
+```typescript
+// Domain layer — interface
+export interface ICandidateRepository {
+    findById(id: number): Promise<Candidate | null>;
+    save(candidate: Candidate): Promise<Candidate>;
+    findAll(): Promise<Candidate[]>;
+}
+
+// Infrastructure layer — Prisma implementation
+export class CandidateRepository implements ICandidateRepository {
+    constructor(private prisma: PrismaClient) {}
+
+    async findById(id: number): Promise<Candidate | null> {
+        const data = await this.prisma.candidate.findUnique({ where: { id } });
+        return data ? new Candidate(data) : null;
+    }
+
+    async save(candidate: Candidate): Promise<Candidate> {
+        // Prisma create/update implementation
+    }
+}
+```
+
+### Domain Services
+
+Domain services contain business logic that doesn't naturally belong to an entity or value object.
+
+```typescript
+export class CandidateService {
+    static calculateAge(candidate: Candidate): number {
+        const today = new Date();
+        const birthDate = new Date(candidate.birthDate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    }
+}
+```
+
+### Additional DDD Recommendations
+
+- **Factories** — Use factory methods to encapsulate the creation of complex aggregates that require specific initial state conforming to business rules.
+- **Relationship modeling** — Regularly review entity relationships to ensure they reflect actual domain needs. Remove unnecessary relationships and add any that facilitate real business operations.
+- **Domain events** — Implement a domain event system so entities can publish events that other components handle without tight coupling.
+
+## SOLID and DRY Principles
+
+### Single Responsibility Principle (SRP)
+
+Each class should have exactly one reason to change. Separate validation from persistence:
+
+```typescript
+export class Candidate {
+    validateEmail(): void {
+        if (!this.email.includes('@')) {
+            throw new Error('Invalid email');
+        }
+    }
+}
+
+export class CandidateRepository {
+    async save(candidate: Candidate): Promise<Candidate> {
+        candidate.validateEmail();
+        return await prisma.candidate.create({ data: candidate });
+    }
+}
+```
+
+### Open/Closed Principle (OCP)
+
+Extend functionality through subclasses rather than modifying existing classes:
+
+```typescript
+export class Candidate {
+    saveToDatabase() { /* ... */ }
+}
+
+class CandidateWithEmail extends Candidate {
+    sendEmail() { /* new behavior, no modification to base */ }
+}
+```
+
+### Interface Segregation Principle (ISP)
+
+Prefer many small interfaces over a single large one:
+
+```typescript
+interface SaveOperation { save(): void; }
+interface EmailOperations { sendEmail(): void; }
+
+class Candidate implements SaveOperation, EmailOperations {
+    save() { /* ... */ }
+    sendEmail() { /* ... */ }
+}
+```
+
+### Dependency Inversion Principle (DIP)
+
+High-level modules must depend on abstractions, not concrete implementations. Inject `PrismaClient` through constructors rather than instantiating it inside domain classes.
+
+### DRY (Don't Repeat Yourself)
+
+Centralize repeated logic in shared methods or base classes. For example, email validation should live in a single `validateEmail()` method on `Candidate` and be called from both `save()` and `update()`, never duplicated inline.
+
+## Coding Standards
+
+### Naming Conventions
+
+| Artifact | Convention | Example |
+|----------|-----------|---------|
+| Variables & functions | camelCase | `candidateId`, `findCandidateById` |
+| Classes & interfaces | PascalCase | `Candidate`, `CandidateRepository` |
+| Constants | UPPER_SNAKE_CASE | `MAX_CANDIDATES_PER_PAGE` |
+| Types & interfaces | PascalCase | `CandidateData`, `ICandidateRepository` |
+| Files | camelCase | `candidateService.ts`, `candidateController.ts` |
+
+All names, comments, error messages, and log messages must be in English.
+
+### TypeScript Usage
+
+- Enable **strict mode** in `tsconfig.json`
+- Use **explicit types** for all function parameters and return values
+- Define **interfaces** for complex data structures
+- Avoid `any` — use `unknown` or specific types instead
+
+```typescript
+// Good: explicit return type
+async function findCandidateById(id: number): Promise<Candidate | null> {
+    // implementation
+}
+
+// Avoid: using any
+function processData(data: any): any { /* ... */ }
+```
+
+### Error Handling
+
+Create domain-specific error classes, use global error middleware for consistent responses, and propagate errors naturally through the call stack.
+
+```typescript
+export class NotFoundError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'NotFoundError';
+    }
+}
+
+// In controller
+try {
+    const candidate = await candidateService.findById(id);
+    if (!candidate) throw new NotFoundError('Candidate not found');
+    res.json(candidate);
+} catch (error) {
+    next(error);
+}
+```
+
+### Validation Patterns
+
+Validate all inputs at the application layer using the centralized `src/application/validator.ts`. Always validate before executing business logic.
+
+```typescript
+import { validateCandidateData } from '../application/validator';
+
+export async function addCandidate(req: Request, res: Response, next: NextFunction) {
+    try {
+        const validatedData = validateCandidateData(req.body);
+        const candidate = await candidateService.create(validatedData);
+        res.status(201).json(candidate);
+    } catch (error) {
+        next(error);
+    }
+}
+```
+
+### Logging Standards
+
+Use the centralized logger from `src/infrastructure/logger.ts`, appropriate log levels (info, error, warn, debug), and structured log messages with relevant context.
+
+```typescript
+import { Logger } from '../infrastructure/logger';
+const logger = new Logger();
+
+logger.info('Candidate created', { candidateId: candidate.id });
+logger.error('Failed to create candidate', { error: error.message });
+```
+
+## API Design Standards
+
+### REST Endpoints
+
+```
+GET    /candidates          # List candidates
+GET    /candidates/:id      # Get candidate by ID
+POST   /candidates          # Create new candidate
+PUT    /candidates/:id      # Update candidate
+DELETE /candidates/:id      # Delete candidate
+```
+
+### Request/Response Patterns
+
+All endpoints return JSON with a consistent envelope:
+
+```typescript
+// Success
+{ "success": true, "data": { ... }, "message": "Operation completed successfully" }
+
+// Error
+{ "success": false, "error": { "message": "Error description", "code": "ERROR_CODE" } }
+```
+
+### Error Response Format
+
+Map errors to appropriate HTTP status codes:
+
+```typescript
+// 400 Bad Request
+{
+    "success": false,
+    "error": {
+        "message": "Validation failed",
+        "code": "VALIDATION_ERROR",
+        "details": [ ... ]
+    }
+}
+
+// 404 Not Found
+{
+    "success": false,
+    "error": { "message": "Resource not found", "code": "NOT_FOUND" }
+}
+```
+
+### CORS Configuration
+
+Configure CORS to allow only specific origins in production:
+
+```typescript
+import cors from 'cors';
+
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+```
+
+## Database Patterns
+
+### Prisma Schema
+
+`prisma/schema.prisma` is the single source of truth for database structure. Use consistent naming (camelCase for fields, PascalCase for models) and define relationships using Prisma relation syntax.
+
+### Migrations
+
+All database changes must be version-controlled through migrations:
+
+```bash
+# Create a new migration
+npx prisma migrate dev --name descriptive_migration_name
+
+# Apply migrations in production
+npx prisma migrate deploy
+```
+
+### Repository Pattern
+
+Define interfaces in the domain layer; implement them with Prisma in the infrastructure layer; inject the Prisma client via constructor:
+
+```typescript
+export class CandidateRepository implements ICandidateRepository {
+    constructor(private prisma: PrismaClient) {}
+
+    async findById(id: number): Promise<Candidate | null> {
+        const data = await this.prisma.candidate.findUnique({ where: { id } });
+        return data ? new Candidate(data) : null;
+    }
+}
+```
+
+## Testing Standards
+
+<Note>
+  The project enforces a **90% coverage threshold** for branches, functions, lines, and statements. Tests must pass before every merge. Coverage reports are stored in `coverage/` with the format `YYYYMMDD-backend-coverage.md`.
+</Note>
+
+### Test File Structure
+
+- Use descriptive file names: `[componentName].test.ts`
+- Place test files alongside the source code they test
+- Use Jest with TypeScript support
+
+### Test Organization Pattern (AAA)
+
+Always follow the **Arrange-Act-Assert** pattern:
+
+```typescript
+describe('CandidateService - findById', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should return candidate when found', async () => {
+        // Arrange
+        const candidateId = 1;
+        const mockCandidate = new Candidate({ id: 1, firstName: 'John' });
+        (CandidateRepository.findById as jest.Mock).mockResolvedValue(mockCandidate);
+
+        // Act
+        const result = await candidateService.findById(candidateId);
+
+        // Assert
+        expect(result).toEqual(mockCandidate);
+        expect(CandidateRepository.findById).toHaveBeenCalledWith(candidateId);
+    });
+});
+```
+
+### Test Case Naming
+
+Use behavior-driven naming: `should_[expected_behavior]_when_[condition]`. Group related cases under descriptive `describe` blocks.
+
+### Test Coverage Categories
+
+Every function needs coverage across five categories:
+
+1. **Happy Path** — valid inputs producing expected outputs
+2. **Error Handling** — invalid inputs, missing data, database errors
+3. **Edge Cases** — boundary values, null/undefined inputs, empty data
+4. **Validation** — input validation and business rule enforcement
+5. **Integration Points** — external service calls and database operations
+
+### Mocking Standards
+
+- Mock all external dependencies (models, services, database clients)
+- Use `jest.mock()` at the top of test files
+- Clear all mocks in `beforeEach()` to ensure test isolation
+- Create mock instances with realistic data structures
+
+### Layer-Specific Testing
+
+| Layer | What to Mock | What to Test |
+|-------|-------------|-------------|
+| **Controller** | Service layer | HTTP request/response handling, parameter parsing, error formatting |
+| **Service** | Domain models and repositories | Business logic, data transformation, error handling |
+| **Database** | Prisma client | Correct queries/parameters, transaction handling |
+
+### Async Testing
+
+- Always use `async/await` for asynchronous operations
+- Use `Promise.allSettled()` for testing concurrent operations
+- Properly handle promise rejections
+- Test timeout scenarios where applicable
+
+## Performance Best Practices
+
+### Database Query Optimization
+
+Avoid N+1 queries by using Prisma's `include`:
+
+```typescript
+// Good: single query with includes
+const candidate = await prisma.candidate.findUnique({
+    where: { id },
+    include: { educations: true, workExperiences: true }
+});
+
+// Avoid: two separate queries (N+1 pattern)
+const candidate = await prisma.candidate.findUnique({ where: { id } });
+const educations = await prisma.education.findMany({ where: { candidateId: id } });
+```
+
+### Async/Await Patterns
+
+Use `Promise.all()` for independent parallel operations:
+
+```typescript
+const [candidates, positions] = await Promise.all([
+    candidateService.findAll(),
+    positionService.findAll()
+]);
+```
+
+## Security Best Practices
+
+### Input Validation
+
+Validate and sanitize all user inputs before processing. Use TypeScript types and the centralized validator to enforce type safety.
+
+### Environment Variables
+
+Never commit `.env` files or secrets to version control. Validate required environment variables at startup:
+
+```typescript
+const requiredEnvVars = ['DATABASE_URL', 'PORT'];
+requiredEnvVars.forEach(varName => {
+    if (!process.env[varName]) {
+        throw new Error(`Missing required environment variable: ${varName}`);
+    }
+});
+```
+
+### Dependency Injection
+
+Inject the Prisma client via Express middleware to avoid global state and improve testability:
+
+```typescript
+app.use((req: Request, res: Response, next: NextFunction) => {
+    req.prisma = prisma;
+    next();
+});
+```
+
+## Development Workflow
+
+### Git Workflow
+
+- **Feature branches** with clear, descriptive names to enable parallel work and avoid conflicts
+- **Descriptive commit messages** in English
+- **Code review** before merging
+- **Small, focused branches** — one feature or fix per branch
+
+### Development Scripts
+
+```bash
+npm run dev              # Development server with hot reload
+npm run build            # Build for production
+npm test                 # Run tests
+npm run test:coverage    # Run tests with coverage report
+npm run prisma:generate  # Generate Prisma client
+npx prisma migrate dev   # Create and apply a migration
+npx prisma db seed       # Seed the database
+```
+
+### Code Quality Gates
+
+Before deploying: ESLint passes, TypeScript compiles without errors, all tests pass at 90%+ coverage.
+
+## Serverless Deployment
+
+The backend supports AWS Lambda deployment via the Serverless Framework.
+
+- **Lambda entry point:** `src/lambda.ts`
+- **Configuration:** `serverless.yml`
+- **Build command:** `npm run build:lambda`
+
+```typescript
+// lambda.ts
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import serverless from 'serverless-http';
+import { app } from './index';
+
+const serverlessHandler = serverless(app);
+
+export const handler = async (
+    event: APIGatewayProxyEvent,
+    context: Context
+): Promise<APIGatewayProxyResult> => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    return await serverlessHandler(event, context) as APIGatewayProxyResult;
+};
+```

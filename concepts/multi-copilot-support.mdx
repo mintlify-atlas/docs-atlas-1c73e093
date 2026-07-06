@@ -1,0 +1,95 @@
+---
+title: "Multi-Copilot Support: One Standard for All AI Tools"
+sidebarTitle: "Multi-Copilot"
+description: "Specboot uses a symlink architecture so Claude, Cursor, GitHub Copilot, and Gemini all read from the same base-standards.md without duplication."
+---
+
+Different AI coding tools look for their configuration at different file paths. Claude and Cursor read `CLAUDE.md`, GitHub Copilot reads `codex.md`, Google Gemini reads `GEMINI.md`, and most other agents default to `AGENTS.md`. If you maintain these files independently, you immediately face a duplication problem: four files to keep in sync, four places where rules can diverge, and four opportunities to forget an update. Specboot solves this with a symlink architecture — every copilot config file is a symbolic link pointing to a single canonical source.
+
+## The Problem: Four Config Paths, One Standard
+
+AI coding tools are not standardized on a single configuration file name. Each tool looks for its rules in a tool-specific location:
+
+| Copilot | Config File | Notes |
+|---------|-------------|-------|
+| Claude / Cursor | `CLAUDE.md` | Loaded automatically at session start |
+| GitHub Copilot | `codex.md` | Read by Copilot/Codex on workspace open |
+| Google Gemini | `GEMINI.md` | Loaded by Gemini CLI and IDE integrations |
+| Generic (most others) | `AGENTS.md` | Works with most agents as a fallback |
+
+Maintaining these as four separate documents means that when a coding standard changes — say you update your TDD policy or add a new language requirement — you must remember to apply the change in four places. In practice, teams update one or two and the rest silently diverge.
+
+## The Solution: Symlinks to a Single Source of Truth
+
+Specboot's `init.js` installer creates all four config files as symbolic links pointing to `docs/base-standards.md`. The actual command executed for each file is:
+
+```js
+createSymlink('CLAUDE.md', 'docs/base-standards.md');
+createSymlink('AGENTS.md', 'docs/base-standards.md');
+createSymlink('codex.md', 'docs/base-standards.md');
+createSymlink('GEMINI.md', 'docs/base-standards.md');
+```
+
+When any of these files is opened — by a human, by an AI tool, or by a script — the operating system transparently follows the symlink and reads `docs/base-standards.md`. Update that one file and every copilot instantly sees the change. There is no synchronization step because there is nothing to synchronize.
+
+## Agent-Specific Discovery Paths
+
+Beyond the root-level config files, Claude and Cursor look for agents and skills in tool-specific subdirectories: `.claude/agents/`, `.claude/skills/`, `.cursor/agents/`, and `.cursor/skills/`. Specboot wires these up as symlinks as well, pointing back to the canonical `ai-specs/` directory.
+
+During initialization, `init.js` discovers every agent and skill defined in the template and creates the corresponding symlinks for both tools:
+
+```js
+// For each tool (.claude, .cursor):
+// For each agent in ai-specs/agents/:
+createSymlink(`${tool}/agents/${agent}`, `../../ai-specs/agents/${agent}`);
+
+// For each skill in ai-specs/skills/:
+createSymlink(`${tool}/skills/${skill}`, `../../ai-specs/skills/${skill}`);
+```
+
+The result is that `.claude/agents/backend-developer.md` and `.cursor/agents/backend-developer.md` both resolve to `ai-specs/agents/backend-developer.md`. You define an agent once in `ai-specs/`, and both Claude and Cursor discover it through their preferred lookup paths.
+
+## Symlink Integrity Rules
+
+`docs/base-standards.md` Section 6 defines explicit rules that govern symlink maintenance across the project lifecycle:
+
+- **Canonical source**: Keep all reusable artifacts in `ai-specs/` as the canonical source. Agent-specific paths (`.claude/`, `.cursor/`) access them through symlinks.
+- **Update safety**: Whenever a file is renamed, moved, or its suffix changes, verify and update all symlinks that target it before considering the change complete.
+- **New artifact linking**: Whenever a new agent or skill is created in `ai-specs/`, create the corresponding symlinks from `.claude/` and `.cursor/` before the change is done.
+- **External customization review**: If customization is introduced outside `ai-specs/`, evaluate whether it should be moved there and replaced with symlinks.
+- **Completion gate**: A change is considered incomplete if it leaves broken symlinks, stale targets, or duplicated canonical artifacts across agent-specific folders.
+
+These rules mean that adding a new agent is a two-step operation: create the file in `ai-specs/agents/`, then create symlinks in `.claude/agents/` and `.cursor/agents/`. Skipping the second step is a rule violation, not just a missed convenience.
+
+<Tip>
+The `sync-agent-symlinks` skill in `ai-specs/skills/sync-agent-symlinks/` automates the process of keeping `.claude/skills/` and `.cursor/skills/` aligned with `ai-specs/skills/` as the canonical source. Use it after any skill addition, removal, or rename to detect and repair broken or orphaned symlinks without manual inspection.
+
+```bash
+# The skill can be invoked directly by your agent:
+# "Run the sync-agent-symlinks skill"
+#
+# It will inventory ai-specs/skills and both mirror targets,
+# then add missing links, fix broken ones, and remove orphans.
+```
+</Tip>
+
+## Adding Support for a New Copilot
+
+If a new AI tool enters your workflow and looks for its configuration at a different path — for example `WINDSURF.md` or `CODY.md` — adding support is a single command:
+
+```bash
+# From your project root:
+ln -s docs/base-standards.md WINDSURF.md
+```
+
+The new tool will immediately read the same base standards as every other copilot in your project. No content to write, no rules to copy, no synchronization to maintain. The symlink architecture scales to any number of tools without adding maintenance burden.
+
+## Why This Architecture Works
+
+The symlink approach succeeds because it separates the *content* of your standards from the *discovery mechanism* each tool uses to find them. Content lives in one place (`docs/base-standards.md`) and can be edited, versioned, and reviewed like any other source file. Discovery is handled by the filesystem, not by your team's memory.
+
+This means:
+- One pull request can update standards for all four copilots simultaneously
+- Code review of a standards change is reviewing one file, not four
+- New team members onboard to one document, regardless of which AI tool they prefer
+- `base-standards.md` carries `alwaysApply: true` in its frontmatter, so agents that support that directive load it automatically without any additional configuration

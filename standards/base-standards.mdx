@@ -1,0 +1,93 @@
+---
+title: "Base Standards: Core Development Rules for All AI Agents"
+sidebarTitle: "Base Standards"
+description: "The single source of truth for all AI agents in Specboot. Covers core principles, language standards, skill loading, planning model requirements, and symlink integrity rules."
+---
+
+The base standards file is the universal ruleset that every AI agent — Claude, Cursor, Codex, Gemini, and any others — must follow when working in a Specboot-managed project. It establishes foundational principles covering how to approach tasks, which language to use, how skills are loaded, and how OpenSpec artifacts must be kept current. All agent-specific configurations are derived from and linked back to this single source of truth.
+
+<Note>
+  This file is symlinked to all copilot configuration directories (e.g., `.claude/`, `.cursor/`). Any change to this file propagates automatically to every agent configuration that references it. Never maintain separate copies — always edit the canonical source in `ai-specs/`.
+</Note>
+
+## 1. Core Principles
+
+Every agent must operate according to these principles on every task, without exception:
+
+- **Small tasks, one at a time.** Always work in baby steps. Never advance more than one step at a time.
+- **Test-Driven Development.** Start with failing tests for any new functionality (TDD), according to the task details.
+- **Type Safety.** All code must be fully typed.
+- **Clear Naming.** Use clear, descriptive names for all variables and functions.
+- **Incremental Changes.** Prefer incremental, focused changes over large, complex modifications.
+- **Question Assumptions.** Always question assumptions and inferences — do not take context for granted.
+- **Pattern Detection.** Detect and highlight repeated code patterns to surface abstraction opportunities.
+
+## 2. Language Standards
+
+All technical artifacts in a Specboot project must be written exclusively in English. This is a non-negotiable rule that covers every artifact an agent can touch:
+
+- **Code** — variables, functions, classes, comments, error messages, log messages
+- **Documentation** — READMEs, guides, API docs
+- **Issue/ticket titles** — Jira descriptions and comments
+- **Data schemas and database names**
+- **Configuration files and scripts**
+- **Git commit messages**
+- **Test names and descriptions**
+
+## 3. Specific Standards Pointers
+
+The base standards define the principles; domain-specific rules live in dedicated documents. Refer to the following for detailed conventions in each area:
+
+| Area | Document | Coverage |
+|------|----------|----------|
+| Backend | [Backend Standards](/standards/backend-standards) | API development, database patterns, testing, security |
+| Frontend | [Frontend Standards](/standards/frontend-standards) | React components, UI/UX guidelines, frontend architecture |
+| Documentation | [Documentation Standards](/standards/documentation-standards) | Technical doc structure, formatting, maintenance |
+| OpenSpec | OpenSpec Tasks Mandatory Steps | Required checklist for creating or updating `tasks.md` files |
+
+## 4. Project Skills
+
+Skills are reusable, pre-defined workflows that agents can load on demand to handle recurring task types consistently.
+
+- **Location:** Skills live in `ai-specs/skills/`.
+- **Auto-loading:** When a request matches a skill, load and follow the corresponding `SKILL.md` automatically before continuing with the task.
+- **Referenced files:** Also load any files referenced inside the skill folder (for example, `references/*.md`) when the skill requires them.
+
+Skills ensure that complex, multi-step workflows — such as creating OpenSpec change requests or running enrichment passes — are executed the same way every time, regardless of which agent or session is active.
+
+## 5. Planning Model Requirement
+
+Certain planning workflows require high-reasoning capability and must be run with the **Opus** model at high reasoning settings.
+
+This requirement applies to the following workflows:
+
+- `enrich-us`
+- `openspec-ff-change` (`/ff`)
+- `openspec-continue-change` (`/continue`)
+
+**Self-correction rule:** Before starting any of these workflows, verify the session is using Opus high reasoning. If it is not, self-correct by adding `"model": "claude-opus-4-7"` to `.claude/settings.json` (use the `update-config` skill or edit directly), then continue — **do not stop and ask the user**. Revert to Sonnet medium reasoning for all other steps.
+
+## 6. Symlink Integrity and Multi-Agent Portability
+
+Specboot uses symlinks to keep a single canonical copy of each artifact in `ai-specs/` while making it available from every agent-specific directory. Agents must uphold symlink integrity at all times.
+
+| Rule | Description |
+|------|-------------|
+| **Canonical Source** | Keep reusable artifacts in `ai-specs/` as the canonical source. Agent-specific paths (`.claude/`, `.cursor/`) reference them through symlinks. |
+| **Update Safety** | Whenever a file is renamed, moved, or its suffix changes, verify and update all symlinks that target it before considering the change complete. |
+| **New Artifact Linking** | When creating a new artifact that requires multi-agent exposure (e.g., new agents or skills in `ai-specs/`), create the corresponding symlinks from all expected agent-specific reference paths. |
+| **External Customization Review** | Whenever customization is introduced outside `ai-specs/`, evaluate whether it should be moved into `ai-specs/` and replaced with a symlink from the original location. |
+| **Completion Gate** | A change is **incomplete** if it leaves broken symlinks, stale targets, or duplicated canonical artifacts across agent-specific folders. |
+
+## 7. Mandatory OpenSpec Artifact Updates for Post-Apply Changes
+
+<Warning>
+  When a new fix or change request appears **after** `opsx:apply` (or `/apply`) and **before** `opsx:archive` (or `/archive`), agents must treat it as a spec update first — not as an informal "fix this quickly". Documentation is the source of truth. Never apply direct code-only fixes in this window without first updating the OpenSpec artifacts.
+</Warning>
+
+The required order for handling any post-apply change request is:
+
+1. **Update OpenSpec artifacts first.** Update all current OpenSpec change artifacts that are affected — scenarios, requirements/specs, and `tasks.md`. Do not add tasks as "bugfixes"; incorporate them as part of the initial design in the proper section.
+2. **Regenerate if needed.** If artifact regeneration is required, run the corresponding OpenSpec step (`opsx:continue`, `opsx:ff`, or equivalent) before writing any code.
+3. **Implement code only after artifacts reflect the new request.** No coding until the spec is updated and accurate.
+4. **Re-run verification.** Verify against the updated artifacts before archiving.

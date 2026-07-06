@@ -1,20 +1,66 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Specboot: Augmented Spec-Driven Development for AI Coding Agents"
+sidebarTitle: "Home"
+description: "Bootstrap a full AI agent configuration into any project in one command. Specboot wires up multi-copilot standards, reusable skills, and spec-driven workflows so every AI tool follows the same rules."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Specboot gives your project a production-ready AI development foundation in seconds. Run one `npx` command and your project gains consistent standards for Claude, Cursor, GitHub Copilot, and Gemini — all pointing to a single source of truth — plus a library of reusable agent skills and a battle-tested spec-driven workflow.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Bootstrap Specboot into your project and run your first AI workflow in minutes.
+  </Card>
+  <Card title="Core Concepts" icon="lightbulb" href="/concepts/spec-driven-development">
+    Understand spec-driven development and how Specboot's architecture works.
+  </Card>
+  <Card title="Workflow Guide" icon="diagram-project" href="/guides/openspec-workflow">
+    Walk through the full OpenSpec command flow from user story to merged PR.
+  </Card>
+  <Card title="Skills Reference" icon="wand-magic-sparkles" href="/reference/skills/overview">
+    Explore the library of reusable AI agent skills included with Specboot.
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## What is Specboot?
+
+Specboot is a portable CLI tool and template kit that bootstraps an augmented spec-driven development environment into any project. At its core it solves a common problem: when a team uses multiple AI coding assistants, each tool operates in isolation with different (or no) context about the project's standards, architecture, and workflows.
+
+Specboot fixes this by:
+
+- **Installing a single source of truth** (`docs/base-standards.md`) that all AI copilots read automatically
+- **Wiring up symlinks** so Claude, Cursor, Codex, and Gemini each find their configuration at their expected path
+- **Providing pre-built agent roles** (backend developer, frontend developer, product analyst) with expert-level system prompts
+- **Bundling reusable skills** for recurring tasks like enriching user stories, auditing code, creating commits, and managing git worktrees
+- **Integrating with OpenSpec** for a structured spec-driven loop: plan → specify → implement → verify → ship
+
+<Steps>
+  <Step title="Install Specboot">
+    Run `npx @lidr/lidr-specboot` in your project root. Files are copied and symlinks are created automatically — existing files are never overwritten.
+  </Step>
+  <Step title="Customize your docs/">
+    Update the files in `docs/` with your project's real stack, architecture patterns, API contracts, and domain models. This step is mandatory for meaningful AI assistance.
+  </Step>
+  <Step title="Initialize OpenSpec">
+    Run `openspec init` and point your `config.yml` to the `docs/` and `ai-specs/` directories Specboot just installed.
+  </Step>
+  <Step title="Start your first workflow">
+    Use `/enrich-us` to refine a user story, `/ff` to generate feature artifacts, `/apply` to implement tasks, and `/verify` to validate the result.
+  </Step>
+</Steps>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Multi-Copilot Support" icon="robot" href="/concepts/multi-copilot-support">
+    A single `docs/base-standards.md` is symlinked to `CLAUDE.md`, `AGENTS.md`, `codex.md`, and `GEMINI.md` so every AI tool loads the same rules.
+  </Card>
+  <Card title="AI Agent Roles" icon="user-gear" href="/reference/agents/overview">
+    Pre-built agent definitions for backend (DDD/TypeScript), frontend (React), and product strategy work.
+  </Card>
+  <Card title="Reusable Skills" icon="book-open" href="/reference/skills/overview">
+    Composable skill prompts for enriching stories, auditing code, writing commits, managing worktrees, and more.
+  </Card>
+  <Card title="Development Standards" icon="shield-check" href="/standards/base-standards">
+    Opinionated TDD-first standards with 90%+ coverage requirements, strict TypeScript, and clean architecture patterns.
+  </Card>
+</CardGroup>

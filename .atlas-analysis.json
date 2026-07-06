@@ -1,0 +1,114 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Specboot",
+  "projectDescription": "A portable CLI tool and template kit that bootstraps augmented spec-driven development workflows into any project, providing multi-copilot AI agent configurations, reusable skills, and development standards out of the box.",
+  "theme": "palm",
+  "primaryColor": "#ef7025",
+  "lightColor": "#eec9bc",
+  "darkColor": "#4fa1ab",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/spec-driven-development",
+              "concepts/multi-copilot-support",
+              "concepts/project-structure"
+            ]
+          },
+          {
+            "group": "Workflow Guide",
+            "pages": [
+              "guides/openspec-workflow",
+              "guides/customization",
+              "guides/mcp-integrations"
+            ]
+          },
+          {
+            "group": "Development Standards",
+            "pages": [
+              "standards/base-standards",
+              "standards/backend-standards",
+              "standards/frontend-standards",
+              "standards/documentation-standards"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "AI Agents",
+            "pages": [
+              "reference/agents/overview",
+              "reference/agents/backend-developer",
+              "reference/agents/frontend-developer",
+              "reference/agents/product-strategy-analyst"
+            ]
+          },
+          {
+            "group": "Skills",
+            "pages": [
+              "reference/skills/overview",
+              "reference/skills/enrich-us",
+              "reference/skills/code-auditing",
+              "reference/skills/commit",
+              "reference/skills/using-git-worktrees",
+              "reference/skills/writing-skills"
+            ]
+          },
+          {
+            "group": "CLI Reference",
+            "pages": [
+              "reference/cli"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "One-command bootstrap via `npx @lidr/lidr-specboot` that copies all templates and recreates symlinks safely",
+    "Multi-copilot support: single source-of-truth standards exposed to Claude, Cursor, GitHub Copilot, and Gemini simultaneously",
+    "Symlink-based portability — agent-specific paths (.claude/, .cursor/) point to canonical ai-specs/ sources",
+    "Pre-built AI agent definitions for backend developer, frontend developer, and product strategy analyst roles",
+    "Reusable skill library (enrich-us, code-auditing, commit, using-git-worktrees, writing-skills, and more)",
+    "Opinionated development standards: TDD, 90%+ test coverage, strict TypeScript, Clean/DDD architecture",
+    "OpenSpec workflow integration: /enrich-us → /ff → /apply → /verify → /adversarial-review → /archive → /commit",
+    "Optional MCP integrations for Jira ticket enrichment and Playwright E2E testing"
+  ],
+  "publicApiSurface": [
+    "npx @lidr/lidr-specboot [target-dir]",
+    "lidr-specboot [target-dir]",
+    "docs/base-standards.md — single source of truth for all AI agent rules",
+    "docs/backend-standards.md — API, database, testing, and security standards",
+    "docs/frontend-standards.md — React component and UI/UX standards",
+    "docs/documentation-standards.md — documentation structure and maintenance",
+    "docs/api-spec.yml — OpenAPI 3.0 specification template",
+    "docs/data-model.md — domain and database model template",
+    "ai-specs/agents/backend-developer.md — DDD TypeScript backend agent",
+    "ai-specs/agents/frontend-developer.md — React frontend agent",
+    "ai-specs/agents/product-strategy-analyst.md — product ideation agent",
+    "ai-specs/skills/enrich-us/SKILL.md",
+    "ai-specs/skills/code-auditing/SKILL.md",
+    "ai-specs/skills/commit/SKILL.md",
+    "ai-specs/skills/using-git-worktrees/SKILL.md",
+    "ai-specs/skills/writing-skills/SKILL.md",
+    "ai-specs/skills/adversarial-review/SKILL.md",
+    "ai-specs/skills/update-docs/SKILL.md",
+    "ai-specs/skills/explain/SKILL.md",
+    "ai-specs/skills/meta-prompt/SKILL.md"
+  ]
+}

@@ -1,0 +1,100 @@
+---
+title: "Skills Library: Reusable AI Workflows for Development Tasks"
+sidebarTitle: "Overview"
+description: "Specboot bundles a library of reusable AI agent skills for common development workflows. Skills auto-load when a request matches their description, as defined in base-standards.md Section 4."
+---
+
+Skills are `SKILL.md` files stored under `ai-specs/skills/` — self-contained reference guides that encode proven techniques, patterns, and workflows so any AI agent can apply them consistently across sessions and projects. Rather than rediscovering the right approach each time, agents load the relevant skill, follow its instructions, and produce repeatable results.
+
+## How Auto-Loading Works
+
+Agents read `base-standards.md` Section 4, which instructs them to scan the skills directory and automatically load any skill whose `description` field matches the current request. This means you rarely need to invoke a skill by name; the agent recognises the situation and applies the correct workflow on its own. Skills are also available for explicit invocation using the `/skill-name` command syntax supported by OpenSpec.
+
+## Symlink Structure
+
+Skills live canonically in `ai-specs/skills/`. To make them discoverable by Claude and Cursor without duplicating files, Specboot creates relative symlinks:
+
+- `.claude/skills/` → entries in `ai-specs/skills/`
+- `.cursor/skills/` → entries in `ai-specs/skills/`
+
+This means updates to a skill file in `ai-specs/skills/` are immediately reflected everywhere. After any rename, move, or new addition, use the `sync-agent-symlinks` skill to keep the symlink tree consistent.
+
+<Note>
+  The **sync-agent-symlinks** skill automates symlink maintenance. Run it after adding a new skill or renaming an existing one to ensure `.claude/skills/` and `.cursor/skills/` stay in sync with `ai-specs/skills/`.
+</Note>
+
+## All Included Skills
+
+| Skill | Description |
+|---|---|
+| `enrich-us` | Analyze and enhance vague user stories into implementation-ready tickets with acceptance criteria, technical detail, and edge cases |
+| `code-auditing` | Run a systematic 6-phase code quality audit covering security, performance, type safety, dead code, and library best practices |
+| `commit` | Stage relevant changes, write descriptive commit messages, push the branch, and create or update a GitHub PR |
+| `using-git-worktrees` | Set up an isolated git worktree before feature work, with baseline checks, Claude settings propagation, and safe cleanup |
+| `writing-skills` | Author and verify new skills following TDD-style RED-GREEN-REFACTOR validation before deployment |
+| `adversarial-review` | Act as an independent red-team reviewer after implementation, before archiving an OpenSpec change |
+| `update-docs` | Identify and update required technical documentation based on implemented changes |
+| `explain` | Teach underlying concepts with clear mental models to close the skill gap behind a user's question |
+| `meta-prompt` | Rewrite prompts using prompt-engineering best practices for precise and complete results |
+| `openspec-sync-specs` | Synchronise OpenSpec artifacts with the current implementation state |
+| `show-spec-working` | Display the specification context being applied to an active change or session |
+| `sync-agent-symlinks` | Recreate `.claude/skills/` and `.cursor/skills/` symlinks to match the current `ai-specs/skills/` directory |
+
+## Documented Skills
+
+<CardGroup cols={2}>
+  <Card title="enrich-us" href="/reference/skills/enrich-us" icon="ticket">
+    Transform vague user stories into implementation-ready tickets with acceptance criteria and technical detail.
+  </Card>
+  <Card title="code-auditing" href="/reference/skills/code-auditing" icon="magnifying-glass">
+    Systematic 6-phase code quality audit covering security, performance, type safety, and dead code.
+  </Card>
+  <Card title="commit" href="/reference/skills/commit" icon="code-branch">
+    Create focused commits with descriptive messages, push branches, and manage GitHub PRs via the `gh` CLI.
+  </Card>
+  <Card title="Git Worktrees" href="/reference/skills/using-git-worktrees" icon="folder-tree">
+    Set up isolated workspaces for feature development with safe creation, baseline verification, and cleanup.
+  </Card>
+  <Card title="writing-skills" href="/reference/skills/writing-skills" icon="pen-to-square">
+    Apply Test-Driven Development to skill authoring: write scenarios, watch agents fail, write the skill, verify compliance.
+  </Card>
+</CardGroup>
+
+## Skill File Structure
+
+Every skill follows a standard layout that makes it machine-readable and human-friendly:
+
+```markdown
+---
+name: skill-name
+description: Use when [specific triggering conditions and symptoms]
+author: LIDR.co
+version: 1.0.0
+---
+
+# Skill Name
+
+## Overview
+Core principle in 1-2 sentences.
+
+## When to Use
+Bullet list of symptoms and situations.
+
+## Instructions
+Step-by-step process with code examples.
+
+## Notes
+Edge cases and important caveats.
+```
+
+The YAML frontmatter's `description` field is what the agent reads to decide whether to load the skill. It should start with "Use when…" and describe triggering conditions only — never summarise the workflow itself, as that causes agents to follow the description instead of reading the full skill body.
+
+## Creating a New Skill
+
+1. Create the directory and main file: `ai-specs/skills/{name}/SKILL.md`
+2. Write YAML frontmatter with `name`, `description`, `author`, and `version`
+3. Follow the `writing-skills` workflow (TDD: run a baseline scenario first, write the skill, verify compliance, close loopholes)
+4. Add any supporting reference files inside the same directory if needed
+5. Run `sync-agent-symlinks` to create the corresponding symlinks in `.claude/skills/` and `.cursor/skills/`
+
+For a detailed walkthrough of the authoring process, see the [writing-skills](/reference/skills/writing-skills) skill documentation.

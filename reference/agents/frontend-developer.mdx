@@ -1,0 +1,201 @@
+---
+title: "Frontend Developer Agent: React Component Architecture Expert"
+sidebarTitle: "Frontend Developer"
+description: "The frontend-developer agent implements React features following component-based architecture, service layer patterns, React Router, and TypeScript conventions. It proposes plans saved to .claude/doc/{feature}/frontend.md."
+---
+
+The `frontend-developer` agent is a pre-built AI role definition specializing in React component-based architecture. It brings deep knowledge of the project's specific conventions for component organization, service layers, API communication, and state management using hooks. Like its backend counterpart, this agent **never performs the actual implementation** — it produces a thorough, file-by-file implementation plan saved to `.claude/doc/{feature_name}/frontend.md` so that the parent agent or developer can execute it with full context.
+
+## Agent Metadata
+
+| Field | Value |
+|---|---|
+| **Name** | `frontend-developer` |
+| **Model** | `claude-sonnet` |
+| **Color** | Cyan |
+| **Output artifact** | `.claude/doc/{feature_name}/frontend.md` |
+
+## Primary Goal
+
+Before doing any work, the agent reads `.claude/sessions/context_session_{feature_name}.md` to load the full feature context. It then researches the existing codebase — components, services, routing, and styles — and proposes a detailed plan covering exactly which files to create or modify, what their content should be, and any important notes about conventions that might not be obvious from an outdated read of the codebase.
+
+<Note>
+The frontend-developer agent must **never run `build` or `dev` commands and never write actual implementation code.** Research and planning only — the parent agent handles building and running the dev server. Colors used in components must always match the ones defined in `src/index.css`.
+</Note>
+
+## Core Expertise Areas
+
+### 1. Service Layer (`src/services/`)
+
+The agent enforces a clean API communication layer separate from UI components:
+
+- Service modules (e.g., `candidateService.js`, `positionService.js`) export objects or named functions that correspond to API endpoints
+- All HTTP requests use **axios** with proper error handling via `try-catch` blocks
+- Services define an `API_BASE_URL` constant or read from environment variables (`REACT_APP_API_URL`)
+- Service functions are **pure async functions that return promises** — no side effects, no UI logic
+- Errors propagate cleanly so calling components can handle them appropriately
+
+### 2. React Components (`src/components/`)
+
+The agent creates functional components that follow these conventions:
+
+- **`useState`** for all component-local state (no global state library)
+- **`useEffect`** for data fetching on mount and for reacting to dependency changes
+- **Props with TypeScript interfaces** for new `.tsx` components; existing `.js` components remain as-is
+- **React Bootstrap** components (`Card`, `Container`, `Row`, `Col`, `Button`, `Form`, `Spinner`, `Alert`) for consistent styling across the application
+- Loading states displayed with `Spinner` or conditional rendering
+- Error states displayed with `Alert` components or inline error messages
+- Presentation logic separated from business logic where possible
+
+### 3. React Router
+
+Routing is configured in `src/App.js` using `BrowserRouter`. The agent:
+
+- Adds new `Route` entries in the main App component for new page-level components
+- Uses the **`useNavigate`** hook for programmatic navigation
+- Uses the **`useParams`** hook to extract URL parameters
+- Follows RESTful path conventions where appropriate (e.g., `/candidates/:id`)
+
+### 4. React Bootstrap UI
+
+The agent uses React Bootstrap consistently across all components:
+
+- Layout: `Container`, `Row`, `Col` for grid-based layouts
+- Data display: `Card`, `ListGroup`, `Table`
+- Actions: `Button` with appropriate variants
+- Forms: `Form`, `Form.Group`, `Form.Control`, `Form.Label`
+- Feedback: `Alert` for errors and success messages, `Spinner` for loading states
+
+### 5. Error Handling and Loading States
+
+Every component that fetches data must explicitly manage two states:
+
+```tsx
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const data = await candidateService.getAll();
+      setCandidates(data);
+    } catch (err) {
+      setError('Failed to load candidates. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, []);
+```
+
+HTTP status codes (200, 201, 400, 404, 500) are handled appropriately in the service layer, with user-friendly messages surfaced in the component.
+
+## Development Workflow
+
+### Creating a New Feature
+
+<Steps>
+  <Step title="Define Service Functions">
+    Create or update a service module in `src/services/` with async functions for each API endpoint the feature needs. Use axios, define `API_BASE_URL`, and wrap calls in `try-catch`.
+  </Step>
+  <Step title="Create React Components">
+    Build functional components in `src/components/` using hooks. New components use `.tsx`; existing `.js` components stay as-is unless the plan specifically calls for migration.
+  </Step>
+  <Step title="State Management">
+    Use `useState` for component-local data. Use `useEffect` for fetching data on mount and for reacting to prop or state changes. No global state library is used.
+  </Step>
+  <Step title="Loading and Error States">
+    Add explicit `loading` and `error` states to every component that communicates with the API. Show `Spinner` while loading, `Alert` on error.
+  </Step>
+  <Step title="Configure Routing">
+    If the feature introduces new pages, add `Route` entries in `src/App.js`. Use `useNavigate` and `useParams` for navigation and parameter extraction within components.
+  </Step>
+  <Step title="Apply React Bootstrap">
+    Use React Bootstrap components for all UI elements to maintain visual consistency. Ensure colors reference the values in `src/index.css`.
+  </Step>
+</Steps>
+
+### Reviewing Existing React Code
+
+When reviewing, the agent verifies:
+
+- Services follow async/await patterns with proper `try-catch` error handling
+- Components explicitly handle both loading and error states
+- React Bootstrap is used consistently for styling
+- Routing is properly configured in `src/App.js`
+- TypeScript components have proper type definitions for props and state
+- API calls handle errors appropriately and display user-friendly messages
+- `useEffect` dependency arrays are correct to prevent stale closures or infinite loops
+- Environment variables are used for API base URLs (not hardcoded values)
+
+### Refactoring Code
+
+When refactoring, the agent:
+
+- Extracts repeated API calls into service modules in `src/services/`
+- Consolidates common UI patterns into reusable components
+- Optimizes re-renders by correcting `useEffect` dependency arrays
+- Improves type safety by converting JavaScript components to TypeScript where appropriate
+- Extracts complex logic into helper functions or custom hooks when it improves readability
+- Ensures consistent error handling patterns across all components
+
+## Output Format
+
+The agent's final message always points to the plan file:
+
+```
+I've created a plan at `.claude/doc/{feature_name}/frontend.md`, please read
+that before you proceed. Key notes: [any important conventions or gotchas the
+developer should know about, e.g., color variables to use from index.css].
+```
+
+The plan at `.claude/doc/{feature_name}/frontend.md` includes:
+
+- Every file to create or modify with its full intended content
+- Service function signatures and axios call patterns
+- Component structure, props interfaces, and hook usage
+- Routing additions required in `src/App.js`
+- Notes on React Bootstrap components and CSS variable usage
+
+## Example Invocations
+
+The following examples come directly from the agent's YAML frontmatter.
+
+**Implementing a new feature module:**
+
+```
+Context: The user is implementing a new feature module in the React application.
+
+User: "Create a new candidate management feature with listing and details"
+```
+
+Since this involves creating a new React feature, the `frontend-developer` agent ensures proper implementation of components, services, and routing following the project's conventions.
+
+**Refactoring to follow project patterns:**
+
+```
+Context: The user needs to refactor existing React code to follow project patterns.
+
+User: "Refactor the position listing to use proper service layer and component
+      structure"
+```
+
+The agent restructures the code to extract API calls into a service module, apply React Bootstrap consistently, and manage loading/error states explicitly.
+
+**Reviewing a recently written feature:**
+
+```
+Context: The user is reviewing recently written React feature code.
+
+User: "Review the candidate management feature I just implemented"
+```
+
+The `frontend-developer` agent validates the code against established React conventions — checking service layer usage, hook correctness, TypeScript types, and React Bootstrap consistency.
+
+## Related Resources
+
+- [Backend Developer Agent](/reference/agents/backend-developer) — counterpart agent for DDD TypeScript architecture
+- [Skills Overview](/reference/skills/overview) — reusable workflows the frontend agent can invoke
+- [Base Standards](/standards/base-standards) — core principles that inform the agent's quality standards
+- [Project Structure](/concepts/project-structure) — how `ai-specs/agents/`, `.claude/`, and `src/` relate to each other

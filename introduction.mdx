@@ -1,0 +1,89 @@
+---
+title: "Specboot: AI-Powered Spec-Driven Development for Any Project"
+sidebarTitle: "Introduction"
+description: "Specboot bootstraps multi-copilot AI agent standards, reusable skills, and spec-driven workflows into any project with a single CLI command."
+---
+
+Specboot is a CLI bootstrapper that installs a complete set of AI agent configurations, development standards, and reusable skills into any existing project. With a single `npx` command it lays down a consistent, portable structure that every major AI coding copilot — Claude, Cursor, GitHub Copilot, and Gemini — can pick up immediately, without any manual wiring.
+
+## The Problem Specboot Solves
+
+Modern development teams rarely use just one AI tool. A backend engineer might reach for Claude while a frontend engineer prefers Cursor, and another teammate uses GitHub Copilot inside VS Code. Without a shared configuration layer, each copilot operates in isolation: it has no knowledge of your architecture patterns, coding conventions, domain language, or API contracts. The result is inconsistent code quality, redundant context-setting in every session, and standards that live in people's heads instead of in the repository.
+
+Specboot solves this by placing a **single source of truth** — `docs/base-standards.md` — at the center of your project and exposing it to every AI tool through the naming conventions each tool already understands.
+
+## Single Source of Truth
+
+When you run Specboot, it creates four top-level configuration files as **symbolic links**, all pointing to `docs/base-standards.md`:
+
+| File | Copilot |
+|------|---------|
+| `CLAUDE.md` | Claude / Cursor |
+| `AGENTS.md` | Generic (most copilots) |
+| `codex.md` | GitHub Copilot / Codex |
+| `GEMINI.md` | Google Gemini |
+
+Because these files are symlinks rather than copies, updating `docs/base-standards.md` once instantly propagates the change to every copilot. No drift, no duplication.
+
+## Key Components
+
+Specboot installs three main areas into your project root:
+
+**`docs/` — Development standards and specifications**
+Contains `base-standards.md` (the single source of truth) alongside optional companion files: `backend-standards.md`, `frontend-standards.md`, `documentation-standards.md`, `api-spec.yml`, and `data-model.md`. These files define the rules every AI agent follows when generating code, tests, and documentation for your project.
+
+**`ai-specs/agents/` — Agent role definitions**
+Markdown files that instruct an AI agent to adopt a specific role — for example `backend-developer.md` or `frontend-developer.md`. OpenSpec's `config.yml` references these files to give each agent the right domain focus for the task at hand.
+
+**`ai-specs/skills/` — Reusable skill prompts and workflows**
+Battle-tested prompt workflows packaged as `SKILL.md` files. Skills are auto-discovered by copilots when a request matches a skill's description (governed by `AGENTS.md` §4). Highlights include `enrich-us`, `using-git-worktrees`, `code-auditing`, and `writing-skills`. All skills are mirrored into `.claude/skills/` and `.cursor/skills/` via relative symlinks so every supported tool can discover them without redundant copies.
+
+<Note>
+The files Specboot installs in `docs/` are **generic reference examples**. Customizing them to match your real project — your stack, architecture patterns, domain language, API contracts, and data models — is **mandatory**. Without this step, your AI assistant will use generic context instead of your actual project context.
+</Note>
+
+## Integration with OpenSpec
+
+Specboot is designed to be used alongside [OpenSpec](https://github.com/Fission-AI/OpenSpec), a spec-driven development framework. After bootstrapping, you point your project's `openspec config.yml` to the `docs/` and `ai-specs/` paths that Specboot created. From that point on, the full OpenSpec command flow — `/enrich-us`, `/ff`, `/apply`, `/verify`, `/adversarial-review`, `/archive`, `/commit` — has all the technical context it needs to generate accurate specs and implement them autonomously.
+
+## Who It's For
+
+Specboot is built for **teams and individual developers who use AI coding assistants** and want those assistants to produce consistent, high-quality code from day one. It is equally useful for:
+
+- Teams where engineers use different AI tools and need a shared set of standards
+- Projects adopting spec-driven development with OpenSpec
+- Developers who want reusable skill workflows without building them from scratch
+- Organizations that need AI-generated code to follow real architecture patterns, not generic ones
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card
+    title="Multi-Copilot Support"
+    icon="robot"
+    href="/concepts/multi-copilot-support"
+  >
+    CLAUDE.md, AGENTS.md, codex.md, and GEMINI.md are all symlinks to one source file. Switch copilots freely — the rules follow automatically.
+  </Card>
+  <Card
+    title="Dev Standards"
+    icon="book-open"
+    href="/standards/base-standards"
+  >
+    Core principles, TDD requirements, type safety, naming conventions, and language rules are documented in one place and applied by every agent on every task.
+  </Card>
+  <Card
+    title="Agent Roles"
+    icon="user-gear"
+    href="/reference/agents/overview"
+  >
+    Role-specific agent definitions in ai-specs/agents/ give each copilot the right domain focus — backend, frontend, analyst, and more — for the artifact it is creating.
+  </Card>
+  <Card
+    title="Skills Library"
+    icon="wand-magic-sparkles"
+    href="/reference/skills/overview"
+  >
+    Reusable SKILL.md workflows for common engineering tasks: story enrichment, git worktrees, code auditing, and more — auto-discovered by any supported copilot.
+  </Card>
+</CardGroup>

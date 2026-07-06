@@ -1,0 +1,118 @@
+---
+title: "MCP Integrations: Jira and Playwright for Specboot Workflows"
+sidebarTitle: "MCP Integrations"
+description: "Enhance Specboot's OpenSpec workflow with optional Jira MCP for ticket enrichment and Playwright MCP for automated E2E testing. Both are optional and replaceable."
+---
+
+MCP (Model Context Protocol) servers extend your AI copilot's capabilities by giving it direct, structured access to external tools — without copy-paste or manual context injection. In the context of Specboot's OpenSpec workflow, two MCP integrations are specifically referenced in the skill definitions: a Jira MCP for reading ticket details during story enrichment, and a Playwright MCP for running browser-based end-to-end checks during verification. Both integrations slot into the existing workflow naturally, reducing friction and improving the quality of what the agent produces.
+
+<Note>
+  Both MCP integrations are **optional**. The full OpenSpec workflow — `/enrich-us`, `/ff`, `/apply`, `/verify`, `/adversarial-review`, `/archive`, `/commit` — works without either integration. If you don't use Jira, or you don't want automated E2E testing, you can skip these entirely. You can also replace them with equivalent tools by updating the relevant skill files in `ai-specs/skills/`.
+</Note>
+
+## Supported Integrations
+
+<CardGroup cols={2}>
+  <Card title="Jira MCP" href="/guides/mcp-integrations#jira-mcp">
+    Lets the agent read Jira ticket details directly during `/enrich-us`, eliminating manual copy-paste of story content.
+  </Card>
+  <Card title="Playwright MCP" href="/guides/mcp-integrations#playwright-mcp">
+    Lets the agent run browser-based E2E checks during `/verify` for user-facing features, providing live validation against a running app.
+  </Card>
+</CardGroup>
+
+## Jira MCP
+
+The Jira MCP is used by the `enrich-us` skill when you pass a Jira ticket ID (e.g., `SCRUM-10`) instead of the full ticket text. Without it, the skill operates in **direct input mode** — you paste the ticket content into the chat and the skill works on that. With it, the skill fetches the ticket directly from your Jira instance, enriches the story, and can write the enhanced version back to the ticket automatically.
+
+### When it is used
+
+The `enrich-us` skill determines the input source automatically:
+
+- **Direct input mode (default):** If you provide full ticket text in the chat, Jira MCP is not used. The skill processes the text you supply.
+- **Jira mode (optional):** If you provide a Jira ticket ID (e.g., `SCRUM-10`) or ask the agent to use "the ticket in progress" or similar, the skill uses Jira MCP to fetch the ticket details.
+
+In Jira mode, after enriching the story, the skill can also update the Jira ticket by appending the enhanced content after the original — with clear `[original]` and `[enhanced]` sections. If the ticket status is `To refine`, it moves it to `Pending refinement validation`.
+
+### How to configure (Cursor)
+
+1. Open **Cursor Settings** and navigate to the **MCP** section.
+2. Add a new MCP server entry for your Jira instance.
+3. Provide the required credentials — typically a Jira API token (generated from your Atlassian account settings), your Jira base URL, and your user email.
+4. Save and restart Cursor to activate the connection.
+
+### How to configure (other agents/IDEs)
+
+Follow your tool's MCP installation documentation. The general pattern is the same: register the Jira MCP server endpoint and supply your API token as a credential. Consult your IDE's MCP setup guide for the exact configuration format.
+
+## Playwright MCP
+
+The Playwright MCP is used during the `/verify` step for features that have a user-facing browser interface. Rather than relying solely on unit and integration tests, the verify workflow can use Playwright to spin up a browser, navigate the application, and validate acceptance criteria against a running instance.
+
+### When it is used
+
+The Playwright MCP is invoked automatically during `/verify` when the feature being verified includes browser-based acceptance scenarios. For purely backend or non-UI features, the verify step proceeds without it. Testing reports from Playwright runs are stored in the OpenSpec change directory alongside the other verification artifacts.
+
+### How to configure (Cursor)
+
+1. Open **Cursor Settings** and navigate to the **MCP** section.
+2. Add the Playwright MCP server. This typically involves specifying the server package or local binary path and any launch options (e.g., headless mode, browser choice).
+3. Save and restart Cursor.
+
+### How to configure (other agents/IDEs)
+
+Follow your tool's MCP installation documentation. Playwright MCP implementations vary — some run as a local server process, others as a CLI-driven adapter. Refer to the MCP provider's documentation for setup instructions specific to your environment.
+
+## Using /enrich-us Without Jira
+
+<Tip>
+  You never need Jira to use `/enrich-us`. In **direct input mode**, simply paste the full ticket text — title, description, acceptance criteria, and any context — directly into the chat when you invoke the skill. The `enrich-us` skill will analyze and enhance it exactly as it would with a Jira-fetched ticket, without requiring any MCP connection.
+
+  This is the default behavior and works in every environment. Use Jira mode only when you want the convenience of fetching tickets by ID and writing enriched content back to Jira automatically.
+</Tip>
+
+Example: invoking enrich-us in direct input mode —
+
+```text
+/enrich-us
+
+## User Story: Add candidate filters to position list
+
+As a recruiter, I want to filter candidates by status so that I can focus on
+the ones that need action.
+
+Acceptance criteria:
+- Filter by: pending, reviewed, shortlisted, rejected
+- Filter state persists on page reload
+- Filter count shown in UI
+```
+
+The skill will validate completeness, identify missing technical detail (endpoints, files to modify, non-functional requirements), and return an `## Original` / `## Enhanced` breakdown.
+
+## Replacing MCPs with Alternative Tools
+
+If your team uses a project management tool other than Jira, or a different browser automation framework instead of Playwright, you can adapt the workflow to use them:
+
+1. Open the relevant skill file in `ai-specs/skills/` — `enrich-us/SKILL.md` for the ticket enrichment workflow, and the verify-related skill for E2E testing.
+2. Update the instructions to reference your tool's MCP server or CLI interface instead of Jira/Playwright.
+3. Update any credential or configuration references to match your tool's authentication model.
+4. Verify that the symlinks in `.claude/skills/` and `.cursor/skills/` still point to the updated canonical files in `ai-specs/skills/`.
+
+Since skills are plain Markdown files with structured instructions, swapping out the underlying tool is a documentation change — no code changes required.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="OpenSpec Workflow" href="/guides/openspec-workflow">
+    See where Jira MCP and Playwright MCP fit into the full /enrich-us → /commit sequence.
+  </Card>
+  <Card title="enrich-us Skill" href="/reference/skills/enrich-us">
+    Full reference for the enrich-us skill — both direct input and Jira mode.
+  </Card>
+  <Card title="Skills Overview" href="/reference/skills/overview">
+    Browse all available skills and learn how to write your own.
+  </Card>
+  <Card title="Customization" href="/guides/customization">
+    Adapt agents and skills to your team's tools, including non-Jira workflows.
+  </Card>
+</CardGroup>

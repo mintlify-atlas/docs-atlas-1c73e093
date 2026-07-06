@@ -1,0 +1,164 @@
+---
+title: "Specboot Project Structure After Installation"
+sidebarTitle: "Project Structure"
+description: "Understand every directory and file Specboot installs: docs/ standards, ai-specs/ agents and skills, copilot config symlinks, and the Cursor rules integration."
+---
+
+When you run `npx @lidr/lidr-specboot` or copy the Specboot template into a project, a specific directory structure is installed alongside your existing code. Every file and directory has a purpose: some contain content you must customize, some are symlinks that wire up multi-copilot support automatically, and some are integration points for specific tools like Cursor. Understanding what each component does tells you where to look when configuring, customizing, or troubleshooting your AI development setup.
+
+## Full Directory Tree
+
+```
+your-project/
+│
+├── docs/                            # Project standards — CUSTOMIZE THESE
+│   ├── base-standards.md            # ← Single source of truth (always loaded)
+│   ├── backend-standards.md         # API, database, testing, security rules
+│   ├── frontend-standards.md        # React components, UI/UX, state management
+│   ├── documentation-standards.md   # Docs structure, formatting, maintenance
+│   ├── api-spec.yml                 # OpenAPI 3.0 template (replace with yours)
+│   ├── data-model.md                # Domain/DB model template (replace with yours)
+│   └── development_guide.md         # Setup and workflow guide (replace with yours)
+│
+├── ai-specs/                        # AI agent configurations — canonical source
+│   ├── agents/                      # Agent role definitions
+│   │   ├── backend-developer.md
+│   │   ├── frontend-developer.md
+│   │   └── product-strategy-analyst.md
+│   ├── skills/                      # Reusable skill prompts and workflows
+│   │   ├── code-auditing/
+│   │   ├── commit/
+│   │   ├── enrich-us/
+│   │   ├── explain/
+│   │   ├── meta-prompt/
+│   │   ├── sync-agent-symlinks/
+│   │   ├── update-docs/
+│   │   ├── using-git-worktrees/
+│   │   └── writing-skills/
+│   ├── scripts/                     # Utility scripts
+│   │   └── code_review.sh
+│   └── specboot-instructions.md     # Specboot overview (for agents)
+│
+├── CLAUDE.md                        # → symlink → docs/base-standards.md
+├── AGENTS.md                        # → symlink → docs/base-standards.md
+├── codex.md                         # → symlink → docs/base-standards.md
+├── GEMINI.md                        # → symlink → docs/base-standards.md
+│
+├── .claude/                         # Claude-specific discovery paths
+│   ├── agents/                      # → symlinks → ../../ai-specs/agents/*
+│   └── skills/                      # → symlinks → ../../ai-specs/skills/*
+│
+└── .cursor/                         # Cursor-specific discovery paths
+    ├── agents/                      # → symlinks → ../../ai-specs/agents/*
+    ├── skills/                      # → symlinks → ../../ai-specs/skills/*
+    └── rules/
+        └── use-base-rules.mdc       # Cursor rules: load base-standards.md always
+```
+
+<Note>
+**Symlinks vs. real files**: `CLAUDE.md`, `AGENTS.md`, `codex.md`, and `GEMINI.md` at the project root are symbolic links — they contain no content of their own. Every entry inside `.claude/agents/`, `.claude/skills/`, `.cursor/agents/`, and `.cursor/skills/` is also a symlink. The only real files are those inside `docs/` and `ai-specs/`. If you need to edit a standard, open the file in `docs/`. If you need to edit an agent or skill, open the file in `ai-specs/`. Never edit through the symlinks.
+</Note>
+
+## The `docs/` Directory
+
+The `docs/` directory holds every standards and specification document your AI agents will read. It is the only directory whose content Specboot installs as a starting point — you are expected to replace the generic content with your project's real context.
+
+### `docs/base-standards.md` — Single Source of Truth
+
+This is the most important file in the entire Specboot structure. It is the canonical rulebook loaded by every AI agent on every session, across every supported copilot tool. Its frontmatter declares `alwaysApply: true`, which causes tools that support this directive to load it automatically without explicit instruction.
+
+`base-standards.md` defines:
+- **Section 1** — Core principles: small tasks, TDD, type safety, clear naming, incremental changes
+- **Section 2** — Language standards: English-only across all code, comments, docs, and commits
+- **Section 3** — Links to domain-specific standards (backend, frontend, documentation)
+- **Section 4** — Project skills: how agents discover and apply skills from `ai-specs/skills/`
+- **Section 5** — Planning model requirements for OpenSpec workflows
+- **Section 6** — Symlink integrity and multi-agent portability rules
+- **Section 7** — Mandatory OpenSpec artifact update rules for post-apply changes
+
+All four root-level config files (`CLAUDE.md`, `AGENTS.md`, `codex.md`, `GEMINI.md`) are symlinks to this file. Update `base-standards.md` and every copilot instantly sees the change.
+
+### `docs/backend-standards.md`, `docs/frontend-standards.md`, `docs/documentation-standards.md`
+
+These files contain domain-specific extensions to the base rules. `base-standards.md` Section 3 points agents to these files for detailed guidance on their respective areas. Customize them to match your actual stack, architecture patterns, testing frameworks, and conventions.
+
+<Warning>
+**`docs/api-spec.yml` and `docs/data-model.md` are reference examples only.** They are included from the LIDR project as structural templates showing the correct OpenAPI 3.0 format and domain model documentation style. They document the LIDR platform's endpoints and entities, not yours. Replace them entirely with your project's real API contracts and data models before running any AI-assisted development work. Leaving the reference content in place will cause agents to generate code for the wrong domain.
+</Warning>
+
+### `docs/development_guide.md`
+
+A setup and workflow guide for developers joining the project. The installed version covers the Specboot/OpenSpec workflow generically. Replace it with your project's actual setup instructions: environment prerequisites, local development commands, deployment process, and any project-specific tooling.
+
+## The `ai-specs/` Directory
+
+`ai-specs/` is the canonical source for all agent configurations and reusable workflow skills. Per `base-standards.md` Section 6, this is the authoritative location — agent-specific paths in `.claude/` and `.cursor/` reference `ai-specs/` through symlinks rather than holding their own copies.
+
+### `ai-specs/agents/`
+
+Agent role definitions that tell an AI assistant *how to behave* when adopting a particular role. Each file describes the agent's responsibilities, decision-making approach, and the standards it should apply. Installed agents include:
+
+- **`backend-developer.md`** — Role definition for backend implementation work; references `docs/backend-standards.md`
+- **`frontend-developer.md`** — Role definition for frontend implementation work; references `docs/frontend-standards.md`
+- **`product-strategy-analyst.md`** — Role definition for requirements analysis and user story enrichment
+
+Add your own agent definitions here as your team develops specialized roles. Any new file you add will be picked up by the symlink structure in `.claude/agents/` and `.cursor/agents/` after running `sync-agent-symlinks`.
+
+### `ai-specs/skills/`
+
+Skills are reusable, named workflow prompts that an agent loads automatically when a request matches the skill's description (per `base-standards.md` Section 4). Each skill lives in its own subdirectory with a `SKILL.md` file defining the workflow steps. Installed skills include:
+
+- **`enrich-us/`** — Enrich a vague user story or Jira ticket into an implementation-ready spec
+- **`using-git-worktrees/`** — Create and clean up isolated Git worktrees for feature work
+- **`writing-skills/`** — Author and validate new skills following TDD-style verification
+- **`code-auditing/`** — Run a systematic 6-phase code quality audit with a prioritized action plan
+- **`commit/`** — Create focused, conventional commits and manage Pull Requests
+- **`sync-agent-symlinks/`** — Synchronize `.claude/skills/` and `.cursor/skills/` with `ai-specs/skills/`
+- **`explain/`**, **`meta-prompt/`**, **`update-docs/`** — Additional workflow utilities
+
+### `ai-specs/scripts/`
+
+Shell scripts for development utility tasks. The installed script is `code_review.sh`, which supports automated code review workflows. Add your own project-specific scripts here.
+
+## Copilot Config Files (Root Level)
+
+The four files at the project root — `CLAUDE.md`, `AGENTS.md`, `codex.md`, `GEMINI.md` — are all symbolic links created by `init.js` during installation. Each points to `docs/base-standards.md`:
+
+```bash
+CLAUDE.md  →  docs/base-standards.md
+AGENTS.md  →  docs/base-standards.md
+codex.md   →  docs/base-standards.md
+GEMINI.md  →  docs/base-standards.md
+```
+
+These files satisfy each AI tool's expected configuration path. Claude and Cursor read `CLAUDE.md`, GitHub Copilot reads `codex.md`, Gemini reads `GEMINI.md`, and most other agents fall back to `AGENTS.md`. Because all four are symlinks to the same file, every tool receives identical rules.
+
+## The `.claude/` and `.cursor/` Directories
+
+These directories provide tool-specific discovery paths for agents and skills. Claude looks for agent definitions in `.claude/agents/` and skill definitions in `.claude/skills/`. Cursor looks in the equivalent `.cursor/` paths. Specboot populates both with symlinks during initialization:
+
+```
+.claude/agents/backend-developer.md    →  ../../ai-specs/agents/backend-developer.md
+.claude/skills/enrich-us               →  ../../ai-specs/skills/enrich-us
+.cursor/agents/backend-developer.md   →  ../../ai-specs/agents/backend-developer.md
+.cursor/skills/enrich-us              →  ../../ai-specs/skills/enrich-us
+# ... one symlink per agent and skill, for each tool
+```
+
+This means Claude and Cursor each get their own "view" of the agent and skill catalog, while all changes are actually made in the single canonical location at `ai-specs/`.
+
+## `.cursor/rules/use-base-rules.mdc`
+
+Cursor has a dedicated rules mechanism separate from its agent discovery. The `use-base-rules.mdc` file is a Cursor rule that carries `alwaysApply: true` in its frontmatter, directing all Cursor agents to load `docs/base-standards.md` as the single authoritative rule set:
+
+```markdown
+---
+description: Directs all AI agents to use the consolidated rules in base-standards.md
+alwaysApply: true
+---
+
+All AI agents working on this project must follow the comprehensive development
+rules and guidelines defined in docs/base-standards.md
+```
+
+This file ensures that even Cursor agents that discover the project through the rules panel — rather than through agent definitions — still load `base-standards.md` with the same `alwaysApply` behavior as other tools.

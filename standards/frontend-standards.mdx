@@ -1,0 +1,380 @@
+---
+title: "Frontend Development Standards for React and TypeScript Projects"
+sidebarTitle: "Frontend Standards"
+description: "Standards for React frontend development including component patterns, service layers, state management with hooks, routing conventions, and UI/UX guidelines."
+---
+
+These standards govern all frontend development in Specboot-managed projects. The frontend is built on React 18 with TypeScript, Bootstrap for styling, and Cypress for end-to-end testing. Every AI agent working within the `frontend/src/` directory should follow these conventions to maintain a consistent, maintainable, and accessible codebase.
+
+## Technology Stack
+
+### Core Technologies
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18.3.1 | UI library with functional components and hooks |
+| **TypeScript** | 4.9.5 | Type safety and better development experience |
+| **Create React App** | 5.0.1 | Build tooling and development server |
+| **React Router DOM** | 6.23.1 | Client-side routing and navigation |
+
+### UI Framework
+
+- **Bootstrap 5.3.3** — CSS framework for responsive design
+- **React Bootstrap 2.10.2** — Bootstrap components wrapped for React
+- **React Bootstrap Icons 1.11.4** — Icon library
+- **React DatePicker 6.9.0** — Date input components
+
+### State Management & Data Flow
+
+- **React Hooks** (`useState`, `useEffect`) — local state management
+- **React Beautiful DND 13.1.1** — drag and drop functionality
+- **Axios** — HTTP client for API communication
+
+### Testing Framework
+
+- **Cypress 14.4.1** — end-to-end testing
+- **Jest** — unit testing (via Create React App)
+- **React Testing Library** — component testing utilities
+
+## Project Structure
+
+```
+frontend/
+├── public/                 # Static assets
+├── src/
+│   ├── components/        # Reusable UI components
+│   ├── services/          # API service layer
+│   ├── pages/             # Page components
+│   ├── assets/            # Images, fonts, static resources
+│   ├── App.js             # Main application component
+│   ├── index.tsx          # Application entry point
+│   └── index.css          # Global styles
+├── cypress/
+│   └── e2e/               # End-to-end test files
+├── package.json
+├── tsconfig.json
+└── cypress.config.ts
+```
+
+## Coding Standards
+
+### Naming Conventions
+
+| Artifact | Convention | Example |
+|----------|-----------|---------|
+| React components | PascalCase | `CandidateCard`, `RecruiterDashboard` |
+| Variables & functions | camelCase | `candidateId`, `handleSubmit`, `fetchPositions` |
+| Constants | UPPER_SNAKE_CASE | `MAX_CANDIDATES_PER_PAGE`, `API_BASE_URL` |
+| Types & interfaces | PascalCase | `CandidateData`, `PositionProps`, `ICandidateService` |
+| Component files | PascalCase | `CandidateCard.tsx`, `PositionDetails.tsx` |
+| Utility files | camelCase | `candidateService.js`, `apiUtils.ts` |
+| CSS classes | kebab-case | `candidate-card`, `position-details` |
+| Custom hooks | camelCase, `use` prefix | `useCandidate`, `useFormValidation` |
+
+All identifiers, comments, error messages, and console logs must be in English.
+
+### Component Conventions
+
+<Tip>
+  Always use **functional components with hooks**. Class components are legacy and should not be written for new code.
+</Tip>
+
+New components should be written in TypeScript. Existing JavaScript components are kept until a planned migration pass.
+
+```typescript
+// Preferred: TypeScript functional component
+import React, { useState, useEffect } from 'react';
+
+type Position = {
+    id: number;
+    title: string;
+    status: 'Open' | 'Hired' | 'Closed' | 'Draft';
+};
+
+const Positions: React.FC = () => {
+    const [positions, setPositions] = useState<Position[]>([]);
+    // component logic
+};
+```
+
+#### Component Props
+
+Define TypeScript interfaces for all props, use destructuring, and include default values where appropriate:
+
+```typescript
+type CandidateCardProps = {
+    candidate: Candidate;
+    index: number;
+    onClick: (candidate: Candidate) => void;
+};
+
+const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index, onClick }) => {
+    // implementation
+};
+```
+
+### State Management
+
+#### Local State with Hooks
+
+Use `useState` for component-level state and `useEffect` for side effects and data fetching. Extract custom hooks for logic that needs to be shared across components.
+
+```javascript
+const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'Draft'
+});
+
+const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+};
+```
+
+#### Loading and Error States
+
+<Tip>
+  Always handle loading and error states for async operations. Use React Bootstrap `Alert` components to surface feedback to users.
+</Tip>
+
+```javascript
+const [loading, setLoading] = useState(true);
+const [error, setError]     = useState('');
+const [success, setSuccess] = useState('');
+
+try {
+    setLoading(true);
+    const data = await apiCall();
+    setSuccess('Operation completed successfully');
+} catch (error) {
+    setError('Error message: ' + error.message);
+} finally {
+    setLoading(false);
+}
+```
+
+### Service Layer Architecture
+
+Centralize all API calls in service files. Use axios, export service objects with grouped methods, and handle errors at the service level when appropriate.
+
+```javascript
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:3010';
+
+export const positionService = {
+    getAllPositions: async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/positions`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching positions:', error);
+            throw error;
+        }
+    },
+
+    updatePosition: async (id, positionData) => {
+        try {
+            const response = await axios.put(`${API_BASE_URL}/positions/${id}`, positionData);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating position:', error);
+            throw error;
+        }
+    }
+};
+```
+
+## UI/UX Standards
+
+### Bootstrap Integration
+
+Use React Bootstrap components rather than plain Bootstrap HTML. Import Bootstrap CSS in the main App component and follow the responsive grid system.
+
+```javascript
+import { Container, Row, Col, Card, Button, Form, Alert } from 'react-bootstrap';
+```
+
+### Form Handling
+
+<Tip>
+  Use controlled components for all form inputs. Disable submit buttons during submission and clear form state after success.
+</Tip>
+
+```javascript
+<Form onSubmit={handleSubmit}>
+    <Form.Group className="mb-3">
+        <Form.Label>Title *</Form.Label>
+        <Form.Control
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleInputChange}
+            required
+        />
+    </Form.Group>
+    <Button type="submit" disabled={saving}>
+        {saving ? 'Saving...' : 'Save'}
+    </Button>
+</Form>
+```
+
+### Navigation Patterns
+
+Use React Router for all navigation. Implement breadcrumbs and back-navigation links. Use the `useNavigate` hook for programmatic navigation.
+
+```javascript
+import { useNavigate } from 'react-router-dom';
+
+const navigate = useNavigate();
+
+<Button variant="link" onClick={() => navigate('/')}>
+    ← Back to Dashboard
+</Button>
+```
+
+### Accessibility
+
+- Include `aria-label` attributes for interactive elements
+- Use semantic HTML elements (`<nav>`, `<main>`, `<section>`, etc.)
+- Ensure keyboard navigation support
+- Provide alternative text for all images
+
+```javascript
+<Form.Control
+    type="text"
+    placeholder="Search by title"
+    aria-label="Search positions by title"
+/>
+```
+
+## Testing Standards
+
+### End-to-End Testing with Cypress
+
+Test user workflows rather than implementation details. Use `data-testid` attributes for reliable element selection. Organize test files by feature (`candidates.cy.ts`, `positions.cy.ts`). Include both UI and API testing.
+
+```typescript
+describe('Positions API - Update', () => {
+    beforeEach(() => {
+        cy.window().then((win) => { win.localStorage.clear(); });
+    });
+
+    it('should update a position successfully', () => {
+        const updateData = { title: 'Updated Test Position', status: 'Open' };
+
+        cy.request({
+            method: 'PUT',
+            url: `${API_URL}/positions/${testPositionId}`,
+            body: updateData
+        }).then((response) => {
+            expect(response.status).to.eq(200);
+            expect(response.body.data.title).to.eq(updateData.title);
+        });
+    });
+});
+```
+
+### Test Organization
+
+- Group related tests with `describe` blocks
+- Use descriptive test names that explain expected behavior
+- Test both success and error scenarios
+- Include edge cases and input validation tests
+
+## Configuration Standards
+
+### TypeScript Configuration
+
+Enable strict mode, configure path mapping for clean imports, and include both Cypress and Node types:
+
+```json
+{
+    "compilerOptions": {
+        "strict": true,
+        "baseUrl": ".",
+        "paths": { "@/*": ["src/*"] },
+        "types": ["cypress", "node"]
+    }
+}
+```
+
+### Environment Configuration
+
+Use environment variables for API URLs, maintain separate configs for development and production, and configure Cypress with environment-specific settings:
+
+```typescript
+// cypress.config.ts
+export default defineConfig({
+    e2e: {
+        baseUrl: 'http://localhost:3000',
+        env: {
+            API_URL: 'http://localhost:3010'
+        }
+    }
+});
+```
+
+## Performance Best Practices
+
+### Component Optimization
+
+- Lazy load components when appropriate
+- Memoize expensive calculations with `useMemo`
+- Avoid unnecessary re-renders with `useCallback`
+- Extract reusable logic into custom hooks
+
+### Bundle Optimization
+
+- Tree shaking is enabled through Create React App
+- Apply code splitting at the route level
+- Optimize images and static assets
+- Monitor bundle size with build tools
+
+### API Efficiency
+
+- Implement proper error handling for all network requests
+- Cache API responses where appropriate
+- Use loading states to improve perceived performance
+- Batch API calls when possible
+
+## Development Workflow
+
+### Git Workflow
+
+- **Feature branches** — use the `-frontend` suffix (e.g., `feature/candidate-filter-frontend`) to enable parallel frontend/backend work and avoid merge conflicts
+- **Descriptive commit messages** in English
+- **Code review** before merging
+- **Small, focused branches** — one feature or fix per branch
+
+### Development Scripts
+
+```bash
+npm start                 # Development server
+npm test                  # Run unit tests
+npm run build             # Production build
+npm run cypress:open      # Open Cypress test runner
+npm run cypress:run       # Run Cypress tests headlessly
+```
+
+### Code Quality Gates
+
+Before deploying: ESLint passes, TypeScript compiles without errors, all tests pass.
+
+## Migration Strategy
+
+### TypeScript Migration
+
+The project is migrating gradually from JavaScript to TypeScript:
+
+- All new components must be written in TypeScript
+- Existing JavaScript components are maintained until a planned refactor
+- Types are added incrementally to existing code
+
+### Component Modernization
+
+- Use functional components over class components
+- Use hooks instead of lifecycle methods
+- Use React Bootstrap components for consistency
+- Apply responsive design principles throughout

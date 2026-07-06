@@ -1,0 +1,89 @@
+---
+title: "Spec-Driven Development: How Specboot Structures AI Work"
+sidebarTitle: "Spec-Driven Dev"
+description: "Spec-driven development uses specifications as the source of truth for AI agents. Learn how Specboot enforces this pattern and why it produces better AI-assisted code."
+---
+
+Spec-driven development is the practice of writing documentation and specifications *before* writing code, then directing AI agents to implement strictly from those specifications. Rather than prompting an AI with ad-hoc instructions and hoping for consistent output, every implementation decision is grounded in a written artifact that the team has already reviewed and agreed upon. Specboot installs a ready-to-use scaffold — centered on `docs/base-standards.md` — that wires this discipline into your project from day one.
+
+## The Problem with Ad-Hoc AI Prompting
+
+When developers interact with AI coding assistants without a shared standards document, several failure modes emerge reliably:
+
+- **Inconsistent output**: The same AI tool produces different code patterns on different days because the context it receives changes with each prompt.
+- **Forgotten context**: Project-specific rules (naming conventions, test coverage targets, architectural constraints) must be re-stated in every prompt or silently dropped.
+- **No shared standards**: Team members using different AI tools — Claude, Cursor, GitHub Copilot, Gemini — end up with AI assistants following entirely different implicit rules, creating divergent codebases.
+- **Documentation drift**: Code gets written and merged, but specs are never created or updated. Over time no one knows *why* a design decision was made.
+
+These are not problems with the AI models themselves. They are problems with how context is delivered. Spec-driven development solves them structurally rather than through willpower.
+
+## How Specboot Enforces the Pattern
+
+Specboot's central mechanism is `docs/base-standards.md` — a single Markdown file that every AI agent in your project is configured to load before doing any work. It is the undivided source of truth for:
+
+- Core development principles (TDD, type safety, incremental changes)
+- Language standards (English-only for all technical artifacts)
+- Pointers to domain-specific standards for backend, frontend, and documentation
+- Workflow rules for OpenSpec integration
+- Symlink integrity requirements for multi-agent portability
+
+Because every copilot config file (`CLAUDE.md`, `AGENTS.md`, `codex.md`, `GEMINI.md`) is a symlink to `docs/base-standards.md`, updating one file propagates the change to every AI tool simultaneously. There is no synchronization problem because there is no duplication.
+
+## Key Principles from base-standards.md
+
+The following principles are defined in `docs/base-standards.md` Section 1 and Section 2, and applied by every agent that loads the file:
+
+| Principle | Rule |
+|---|---|
+| **Small tasks, one at a time** | Always work in baby steps; never advance more than one step |
+| **Test-Driven Development** | Write failing tests before writing any new functionality |
+| **Type safety** | All code must be fully typed (TypeScript by default) |
+| **Clear naming** | Descriptive names for all variables and functions |
+| **Incremental changes** | Prefer focused, reviewable modifications over large refactors |
+| **Question assumptions** | Always surface and challenge inferences before acting |
+| **English only** | All code, comments, docs, commits, and data schemas in English |
+
+These rules are not advisory. Because `base-standards.md` carries `alwaysApply: true` in its frontmatter, every supported agent treats them as mandatory context for every session.
+
+## The Mandatory Update Cycle
+
+The most important enforcement mechanism in spec-driven development is the rule governing what happens *after* work has started.
+
+<Note>
+**Section 7 of base-standards.md — Mandatory OpenSpec Artifact Updates for Post-Apply Changes**
+
+When a new fix or change request arrives after `/apply` has run but before `/archive` completes, agents must treat it as a **spec update first**, not as an informal "fix this quickly." The required order is:
+
+1. Update the affected OpenSpec change artifacts (scenarios, requirements/specs, `tasks.md`) — reflecting the new request as part of the original design, not as a tagged bugfix.
+2. If artifact regeneration is needed, run the corresponding OpenSpec step (`opsx:continue`, `opsx:ff`, or equivalent) before writing any code.
+3. Implement code only after artifacts reflect the new request.
+4. Re-run verification against the updated artifacts before archiving.
+
+Direct code-only fixes in this window are explicitly prohibited.
+</Note>
+
+This rule closes the most common escape hatch in spec-driven workflows: the impulse to "just fix it quickly" and update the documentation later (which in practice means never). By making the spec update a prerequisite for the code change, Specboot ensures documentation remains the ground truth even under pressure.
+
+## The OpenSpec Command Flow
+
+Specboot is designed to work alongside [OpenSpec](https://github.com/Fission-AI/OpenSpec), a spec-driven development framework that provides a command-based workflow for planning and implementing changes. The integration enforces spec-first thinking at every stage:
+
+1. **`/enrich-us`** *(optional)* — Refine a vague user story or idea into an implementation-ready ticket with acceptance criteria, technical detail, and edge cases. Runs before any planning artifacts are created.
+2. **`/ff`** — Create all required OpenSpec artifacts for the change: feature file, tasks, scenarios. No code is written yet.
+3. **`/apply`** — Implement tasks one by one, strictly from the artifacts created in `/ff`. Each task is a focused unit of work.
+4. **`/verify`** — Validate the implementation against the change artifacts. The spec, not developer memory, is the acceptance criterion.
+5. **`/adversarial-review`** — Independent red-team code review before archiving.
+6. **`/archive`** — Archive the completed change, preserving the full artifact trail.
+7. **`/commit`** — Create focused, conventional commits and manage the Pull Request after verification.
+
+This flow makes it structurally impossible to skip documentation. You cannot reach `/apply` without having written the specification in `/ff`, and the Section 7 rule means that any mid-flight change request re-enters the flow at the top.
+
+## Benefits
+
+Adopting spec-driven development through Specboot produces three categories of durable benefits:
+
+**Consistent output.** Because every agent reads the same `base-standards.md` on every session, the code an AI produces on a Monday is consistent with what it produces on a Friday, and what one team member's Claude produces matches what another's Cursor produces.
+
+**Maintainable codebase.** TDD, type safety, and incremental-change rules are applied automatically, not aspirationally. The codebase reflects the standards because the standards are loaded as mandatory context, not posted on a wiki page no one reads.
+
+**Knowledge preservation.** Standards and decisions are documented in version-controlled files, not locked inside any individual's head or lost in chat history. New team members — and new AI agents — read the same documents and inherit the same context. The project's accumulated knowledge compounds rather than evaporating with team turnover.

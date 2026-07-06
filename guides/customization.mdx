@@ -1,0 +1,142 @@
+---
+title: "Customize Specboot for Your Project Stack"
+sidebarTitle: "Customization"
+description: "Adapt Specboot's docs/, agents, and skills to your project's real tech stack, architecture patterns, and domain language. This step is required for meaningful AI assistance."
+---
+
+Specboot ships with a complete set of placeholder standards, agent definitions, and example artifacts drawn from the LIDR reference project. Out of the box, these files give your AI copilot a coherent structure to follow — but not your structure. If you skip customization, the agent operates with generic technical context: generic framework assumptions, generic naming conventions, generic API patterns. The output will be technically correct but architecturally wrong for your codebase. Customization is not optional; it is the step that turns a generic scaffolding tool into a project-aware AI assistant.
+
+<Warning>
+  Skipping customization means your AI assistant will generate code and artifacts based on the LIDR reference project's stack, architecture, and domain — not yours. Every `/ff`, `/apply`, and `/verify` run will drift from your real project conventions. Update `docs/` before running any OpenSpec workflow commands.
+</Warning>
+
+## The 4-Step Customization Flow
+
+<Steps>
+  <Step title="Update docs/ — Replace generic standards with your real context">
+    The `docs/` directory is the single source of truth for all AI-assisted work in your project. Every copilot configuration (`CLAUDE.md`, `codex.md`, `GEMINI.md`, `AGENTS.md`) ultimately points here. Update each file to reflect your actual stack, architecture, and domain:
+
+    - **`base-standards.md`** — Core principles, coding standards, language requirements, and project-wide rules. This file is loaded by all copilots on every request. Start here. All other standards documents are referenced from this file.
+    - **`backend-standards.md`** — Your real backend framework (e.g. Express, NestJS, FastAPI, Rails), ORM (e.g. Prisma, TypeORM, SQLAlchemy), API patterns, database conventions, security guidelines, and testing requirements.
+    - **`frontend-standards.md`** — Your UI framework (e.g. React, Vue, Svelte), component patterns, state management approach (e.g. Redux, Zustand, Pinia), styling conventions, and component testing strategy.
+    - **`documentation-standards.md`** — Your documentation structure, formatting rules, how API docs are maintained, and how AI-generated documentation is reviewed and approved.
+    - **`api-spec.yml`** — Your real API endpoints in OpenAPI 3.0 format. Replace the LIDR reference endpoints with your project's actual routes, request/response schemas, and authentication patterns.
+    - **`data-model.md`** — Your actual database schema, domain entities, and relationships. The agent uses this when generating feature specs and implementation tasks that touch data.
+    - **`development_guide.md`** — Your setup instructions, environment configuration, run commands, and local development workflow. New team members and the AI both rely on this.
+
+    Use this prompt with your copilot to automate the replacement while preserving the document structure:
+
+    ```text
+    Following the same base structure already present in docs/, update all technical context documents according to this project's specifics.
+
+    Requirements:
+    - Keep the same document set and file names in docs/.
+    - Replace generic content with this project's real stack, architecture patterns, coding conventions, and domain terminology.
+    - Update backend, frontend, and documentation standards to reflect actual practices used by this team.
+    - Update docs/api-spec.yml and docs/data-model.md so they match the real endpoints and entities of this project.
+    - Ensure all references are internally consistent and aligned across docs/.
+    - Keep everything in English and make guidance implementation-ready for AI agents.
+    ```
+  </Step>
+
+  <Step title="Adapt ai-specs/agents/ — Align agent roles to your team's workflow">
+    The `ai-specs/agents/` directory contains role definitions that the AI adopts when working on different parts of your codebase. The default roles (backend developer, frontend developer, analyst, etc.) are designed around the LIDR project's team structure.
+
+    Open each agent file and update:
+    - The agent's responsibilities and scope
+    - Which `docs/` standards it references for its domain
+    - Any team-specific conventions, approval workflows, or handoff patterns
+    - The boundaries between roles (e.g. who owns API contract decisions, who owns UI state management)
+
+    Agent files in `ai-specs/agents/` are the canonical source. They are exposed to Claude and Cursor via relative symlinks in `.claude/agents/` and `.cursor/agents/`. Do not edit the symlink targets directly — edit the source in `ai-specs/agents/` and let the symlinks propagate the changes.
+  </Step>
+
+  <Step title="Extend ai-specs/skills/ — Add project-specific reusable workflows">
+    Skills are reusable prompt workflows that the agent loads automatically when a request matches the skill's description. Specboot ships with core skills (`enrich-us`, `commit`, `using-git-worktrees`, `code-auditing`, and others), but your project likely has domain-specific workflows that benefit from the same treatment.
+
+    To add a skill:
+    1. Create a new directory under `ai-specs/skills/<skill-name>/`
+    2. Add a `SKILL.md` file with frontmatter (`name`, `description`, `author`, `version`) and a full instructions block
+    3. Create relative symlinks from `.claude/skills/<skill-name>` and `.cursor/skills/<skill-name>` to the canonical `ai-specs/skills/<skill-name>` entry
+
+    Use the `writing-skills` skill to author and validate new skills following TDD-style verification before deploying them. Examples of project-specific skills: deployment checklists, data migration workflows, integration test sequences, and domain-specific code review criteria.
+  </Step>
+
+  <Step title="Point OpenSpec config.yml to your docs/ and ai-specs/">
+    After running `openspec init` and copying the Specboot files, update your project's `config.yml` so that every OpenSpec artifact (feature files, tasks, specs) is generated using your real technical context.
+
+    Use this prompt to automate the config update:
+
+    ```text
+    Update my openspec config.yml context to reference this repository's docs and ai-specs structure.
+
+    Requirements:
+    - Use docs/base-standards.md as the single source of truth.
+    - Include docs/backend-standards.md, docs/frontend-standards.md, docs/documentation-standards.md.
+    - Include docs/api-spec.yml and docs/data-model.md.
+    - Tell the agent to adopt ai-specs/agents/backend-developer.md for backend work and ai-specs/agents/frontend-developer.md for frontend work.
+    - Mention ai-specs/skills as workflow guidance.
+    - Keep all paths relative to the project root.
+    ```
+
+    Or update `config.yml` manually. Here is the full reference example:
+
+    ```yml
+    context: |
+      Tech stack: TypeScript, Node.js, Express, Prisma, Domain-Driven Design (DDD)
+      Architecture: Clean Architecture with Domain, Application, and Presentation layers
+      We use conventional commits
+      Domain: LTI (Leadership. Technology. Impact) ATS platform
+      All code, comments, documentation, and technical artifacts must be in English
+
+      Project specs (single source of truth): All artifact creation and implementation MUST follow the project's technical context in ai-specs/. Read and apply these when creating or implementing:
+      - docs/base-standards.md — core principles, TDD, language standards, links to backend/frontend/docs standards
+      - docs/backend-standards.md — API, database, testing, security (backend changes)
+      - docs/frontend-standards.md — React, UI/UX (frontend changes)
+      - docs/api-spec.yml — API contracts and endpoint definitions
+      - docs/data-model.md — domain and data model
+      - docs/documentation-standards.md — docs structure and maintenance
+      For implementation: adopt the relevant agent from ai-specs/agents/ (e.g. backend-developer.md for backend, frontend-developer.md for frontend). Use ai-specs/skills/ for workflow guidance when applicable.
+
+    # Per-artifact rules (optional)
+    # Add custom rules for specific artifacts.
+    rules:
+      # Global: apply ai-specs when creating any artifact
+      _global:
+        - Before creating any artifact, read and apply docs/base-standards.md
+        - For backend-related artifacts, read docs/backend-standards.md and adopt guidelines from ai-specs/agents/backend-developer.md
+        - For frontend-related artifacts, read docs/frontend-standards.md and adopt guidelines from ai-specs/agents/frontend-developer.md
+        - Use docs/api-spec.yml and docs/data-model.md for API and data consistency in specs and tasks
+    ```
+
+    Replace the `context` block's stack description, architecture notes, and domain with your project's real values. The `rules` block can be extended with per-artifact overrides if certain artifact types (e.g. migration files, API schemas) need additional standards applied.
+  </Step>
+</Steps>
+
+## Maintaining Standards Over Time
+
+Once your `docs/` files are customized, treat them as first-class project artifacts — not as one-time setup files.
+
+- **Single Source of Truth**: Always update `base-standards.md` first when a project-wide rule changes. All copilot configuration files (`CLAUDE.md`, `codex.md`, `GEMINI.md`, `AGENTS.md`) reference it through symlinks, so a single update propagates everywhere.
+- **Version Control**: Commit standards changes to version control just like code changes. Use descriptive commit messages (e.g. `docs: add rate-limiting standard to backend-standards.md`).
+- **Team Review**: Standards changes affect every developer and every AI-generated artifact. Route them through the same PR review process as production code.
+- **Keep Examples Current**: When the implementation evolves (new patterns, deprecated approaches), update the examples in `docs/` to reflect actual practice. Stale examples mislead the agent.
+- **Symlink Integrity**: After renaming, moving, or changing the suffix of any file in `ai-specs/`, verify and update all symlinks that target it. A broken symlink means a copilot silently loses access to that file. Use `git worktree list` and `ls -la .claude/ .cursor/` to audit symlink health after structural changes.
+- **Canonical Placement**: Keep all agents and skills in `ai-specs/` as the canonical source. Expose them to agent-specific paths (`.claude/`, `.cursor/`) through symlinks — never duplicate the files.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="OpenSpec Workflow" href="/guides/openspec-workflow">
+    Run the full /enrich-us → /commit loop once your docs/ context is in place.
+  </Card>
+  <Card title="Base Standards Reference" href="/standards/base-standards">
+    Full reference for base-standards.md — the single source of truth for all copilots.
+  </Card>
+  <Card title="Skills Overview" href="/reference/skills/overview">
+    Browse all built-in skills and learn how to add your own.
+  </Card>
+  <Card title="Agents Overview" href="/reference/agents/overview">
+    Review the default agent role definitions and how to adapt them.
+  </Card>
+</CardGroup>

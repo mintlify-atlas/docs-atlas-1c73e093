@@ -1,0 +1,97 @@
+---
+title: "Documentation Standards: Technical Doc Structure and Maintenance"
+sidebarTitle: "Doc Standards"
+description: "Guidelines for maintaining technical documentation in Specboot projects, including AI standards files, API documentation with OpenAPI, and the docs/ folder structure."
+---
+
+Documentation standards in Specboot cover two distinct but related concerns: technical documentation (data models, API specs, READMEs, and project guides) and AI specs (the rules, standards, and conventions that govern how agents behave). Both categories must be actively maintained, written exclusively in English, and kept in sync with the actual state of the codebase at all times.
+
+## General Rules
+
+All documentation — whether human-facing or agent-facing — follows one universal rule:
+
+**ALWAYS WRITE IN ENGLISH.** This applies to:
+- Creating new documentation files
+- Updating existing documentation
+- Comments and inline explanations within documentation files
+- Field descriptions, function explanations, and any annotation in the code
+
+This rule has no exceptions and applies to both technical documentation and AI specs.
+
+## Two Categories of Documentation
+
+### Technical Documentation
+
+Technical documentation describes how the project is structured, how it runs, and how it operates. It includes:
+
+- Data model definitions (`data-model.md`)
+- API specifications (`api-spec.yml`)
+- README files and installation guides
+- Architecture decision records
+- Any other Markdown documents that explain project structure or behavior
+
+### AI Specs
+
+AI specs are the documents that instruct AI agents how to behave, plan, code, and document. They include:
+
+- Team agreements and standards files (`base-standards.md`, `backend-standards.md`, etc.)
+- Agent configuration files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`)
+- Skills and reusable workflows (`ai-specs/skills/`)
+- OpenSpec artifacts (scenarios, requirements, `tasks.md`)
+
+<Note>
+  The `base-standards.md` file is the **single source of truth** for all AI agent behavior. It is symlinked to every agent-specific configuration directory. Never maintain a separate copy — always edit the canonical source in `ai-specs/` and let symlinks propagate the change.
+</Note>
+
+## Technical Documentation Maintenance Process
+
+Before making any commit, git push, or when explicitly asked to document a change, the agent must review which technical documentation is affected. The required process is:
+
+1. **Review all recent changes** in the codebase.
+2. **Identify which documentation files need updates** based on what changed. Clear examples:
+   - Data model changes → update the data model definition section in `data-model.md`
+   - API changes → update `api-spec.yml`
+   - Library upgrades, database migrations, or changes that affect the installation process → update the relevant `*-standards.md` file
+3. **Update each affected documentation file in English**, maintaining consistency with the existing structure and formatting.
+4. **Ensure proper formatting** and adherence to the established document structure.
+5. **Verify that all changes are accurately reflected** — no outdated descriptions, no stale examples.
+6. **Report which files were updated** and what changes were made.
+
+## AI Specs Maintenance — Learning from Feedback
+
+AI specs are living documents. They must evolve based on user feedback, corrections, and new insights surfaced during agent interactions.
+
+The AI must actively analyze all user interactions for learning opportunities — not only when feedback is given explicitly, but proactively during every session. When a learning opportunity is identified, the agent must:
+
+1. Propose the specific rule change, clearly connecting it to the feedback or insight that triggered it
+2. Identify which rule or section should be modified (precise scope, not vague suggestions)
+3. Obtain explicit user **review and approval** before applying any modification
+4. Confirm to the user after the modification has been successfully implemented
+
+### Common Anti-Patterns to Avoid
+
+The following behaviors violate the AI specs maintenance process and must never occur:
+
+| Anti-Pattern | Description |
+|-------------|-------------|
+| **Skipping Approval** | Applying rule modifications without explicit user review and approval |
+| **Unlinked Proposals** | Proposing changes without clearly connecting them to specific user feedback |
+| **Imprecise Modifications** | Suggesting vague changes without identifying the exact rule or section to update |
+| **Unaddressed Feedback** | Not initiating the review process when relevant feedback is received |
+| **Scope Creep** | Updating multiple unrelated rules simultaneously, or making changes beyond the scope of the feedback |
+| **Unprompted Rule Changes** | Modifying rules proactively with no direct connection to user feedback — updates must be reactive and feedback-driven |
+| **Missing Update Confirmation** | Failing to notify the user after an approved rule modification has been implemented |
+
+## Documentation Update Triggers
+
+Use this reference to determine when each documentation file must be updated:
+
+| Change Type | Files to Update |
+|-------------|----------------|
+| New API endpoint or changed request/response shape | `api-spec.yml` |
+| New or modified data model / database schema | `data-model.md` |
+| New library added or version bumped | Relevant `*-standards.md` |
+| Database migration that changes the installation process | `*-standards.md`, README |
+| New AI skill or agent workflow | `ai-specs/skills/`, symlink audit |
+| Team agreement or coding convention change | `base-standards.md` (and linked files) |
+| OpenSpec artifact added or modified | OpenSpec task file and any affected scenario/requirements docs |

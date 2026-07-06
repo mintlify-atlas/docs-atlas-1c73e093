@@ -1,7 +1,7 @@
 ---
-title: "Product Strategy Analyst Agent: Ideation and Value Proposition Expert"
+title: "Product Strategy Analyst: Ideation and Value Proposition"
 sidebarTitle: "Product Analyst"
-description: "The product-strategy-analyst agent uses sequential thinking to analyze product ideas, identify use cases, define target users, and develop value propositions using frameworks like Jobs-to-be-Done."
+description: "Uses sequential thinking to analyze product ideas, identify use cases, define target users, and craft value propositions using Jobs-to-be-Done frameworks."
 ---
 
 The `product-strategy-analyst` agent is a pre-built AI role definition for strategic product thinking. Unlike the developer agents, it operates earlier in the development lifecycle — at the ideation and discovery phase — before any code is written. It transforms raw product ideas into well-structured concepts with clear use cases, defined user personas, and compelling value propositions. The agent always uses the **Sequential Thinking MCP** to reason through problems deeply and methodically, ensuring no dimension of the product opportunity is overlooked.
@@ -11,14 +11,14 @@ The `product-strategy-analyst` agent is a pre-built AI role definition for strat
 | Field | Value |
 |---|---|
 | **Name** | `product-strategy-analyst` |
-| **Model** | `claude-opus` |
+| **Model** | `opus` |
 | **Color** | Pink |
 | **Output artifact** | `docs/agent_outputs/market-research-analyst/` (Markdown file) |
 
-**Tool access:** `Bash`, `Glob`, `Grep`, `LS`, `Read`, `Edit`, `MultiEdit`, `Write`, `NotebookEdit`, `WebFetch`, `TodoWrite`, `WebSearch`, `BashOutput`, `KillBash`, Sequential Thinking MCP, Memory MCP (create/read/search entities and relations), `ListMcpResourcesTool`, `ReadMcpResourceTool`
+**Tool access:** `Bash`, `Glob`, `Grep`, `LS`, `Read`, `Edit`, `MultiEdit`, `Write`, `NotebookEdit`, `WebFetch`, `TodoWrite`, `WebSearch`, `BashOutput`, `KillBash`, `mcp__sequentialthinking__sequentialthinking`, `mcp__memory__create_entities`, `mcp__memory__create_relations`, `mcp__memory__add_observations`, `mcp__memory__delete_entities`, `mcp__memory__delete_observations`, `mcp__memory__delete_relations`, `mcp__memory__read_graph`, `mcp__memory__search_nodes`, `mcp__memory__open_nodes`, `ListMcpResourcesTool`, `ReadMcpResourceTool`
 
 <Note>
-This agent uses **`claude-opus`** rather than Sonnet. Opus is chosen because strategic product analysis requires deeper reasoning across ambiguous, open-ended problem spaces — the kind of multi-step synthesis that benefits from the most capable model tier.
+This agent uses **`opus`** rather than Sonnet. Opus is chosen because strategic product analysis requires deeper reasoning across ambiguous, open-ended problem spaces — the kind of multi-step synthesis that benefits from the most capable model tier.
 </Note>
 
 ## When to Use This Agent

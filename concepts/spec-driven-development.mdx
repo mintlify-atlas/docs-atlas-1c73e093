@@ -1,7 +1,7 @@
 ---
 title: "Spec-Driven Development: How Specboot Structures AI Work"
 sidebarTitle: "Spec-Driven Dev"
-description: "Spec-driven development uses specifications as the source of truth for AI agents. Learn how Specboot enforces this pattern and why it produces better AI-assisted code."
+description: "Learn how Specboot enforces spec-first development: 7 core principles, English-only rules, skill auto-loading, and mandatory post-apply spec updates."
 ---
 
 Spec-driven development is the practice of writing documentation and specifications *before* writing code, then directing AI agents to implement strictly from those specifications. Rather than prompting an AI with ad-hoc instructions and hoping for consistent output, every implementation decision is grounded in a written artifact that the team has already reviewed and agreed upon. Specboot installs a ready-to-use scaffold — centered on `docs/base-standards.md` — that wires this discipline into your project from day one.
@@ -31,7 +31,7 @@ Because every copilot config file (`CLAUDE.md`, `AGENTS.md`, `codex.md`, `GEMINI
 
 ## Key Principles from base-standards.md
 
-The following principles are defined in `docs/base-standards.md` Section 1 and Section 2, and applied by every agent that loads the file:
+The following principles are defined in `docs/base-standards.md` Section 1 and applied by every agent that loads the file:
 
 | Principle | Rule |
 |---|---|
@@ -41,7 +41,9 @@ The following principles are defined in `docs/base-standards.md` Section 1 and S
 | **Clear naming** | Descriptive names for all variables and functions |
 | **Incremental changes** | Prefer focused, reviewable modifications over large refactors |
 | **Question assumptions** | Always surface and challenge inferences before acting |
-| **English only** | All code, comments, docs, commits, and data schemas in English |
+| **Pattern detection** | Detect and highlight repeated code patterns |
+
+Section 2 adds a language rule that applies across every artifact the AI touches: **English only** — all code, comments, docs, Jira tickets, data schemas, configuration files, commit messages, and test names must be written in English.
 
 These rules are not advisory. Because `base-standards.md` carries `alwaysApply: true` in its frontmatter, every supported agent treats them as mandatory context for every session.
 

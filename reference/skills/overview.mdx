@@ -1,7 +1,7 @@
 ---
 title: "Skills Library: Reusable AI Workflows for Development Tasks"
 sidebarTitle: "Overview"
-description: "Specboot bundles a library of reusable AI agent skills for common development workflows. Skills auto-load when a request matches their description, as defined in base-standards.md Section 4."
+description: "All twelve AI agent skills bundled with Specboot, how auto-loading works, and the symlink structure that makes skills discoverable to Claude and Cursor."
 ---
 
 Skills are `SKILL.md` files stored under `ai-specs/skills/` — self-contained reference guides that encode proven techniques, patterns, and workflows so any AI agent can apply them consistently across sessions and projects. Rather than rediscovering the right approach each time, agents load the relevant skill, follow its instructions, and produce repeatable results.
@@ -28,7 +28,7 @@ This means updates to a skill file in `ai-specs/skills/` are immediately reflect
 | Skill | Description |
 |---|---|
 | `enrich-us` | Analyze and enhance vague user stories into implementation-ready tickets with acceptance criteria, technical detail, and edge cases |
-| `code-auditing` | Run a systematic 6-phase code quality audit covering security, performance, type safety, dead code, and library best practices |
+| `code-auditing` | Run a systematic 7-phase code quality audit (Phase 0–6) covering security, performance, type safety, dead code, and library best practices |
 | `commit` | Stage relevant changes, write descriptive commit messages, push the branch, and create or update a GitHub PR |
 | `using-git-worktrees` | Set up an isolated git worktree before feature work, with baseline checks, Claude settings propagation, and safe cleanup |
 | `writing-skills` | Author and verify new skills following TDD-style RED-GREEN-REFACTOR validation before deployment |
@@ -47,7 +47,7 @@ This means updates to a skill file in `ai-specs/skills/` are immediately reflect
     Transform vague user stories into implementation-ready tickets with acceptance criteria and technical detail.
   </Card>
   <Card title="code-auditing" href="/reference/skills/code-auditing" icon="magnifying-glass">
-    Systematic 6-phase code quality audit covering security, performance, type safety, and dead code.
+    Systematic 7-phase (Phase 0–6) code quality audit covering security, performance, type safety, and dead code.
   </Card>
   <Card title="commit" href="/reference/skills/commit" icon="code-branch">
     Create focused commits with descriptive messages, push branches, and manage GitHub PRs via the `gh` CLI.

@@ -1,7 +1,7 @@
 ---
-title: "Backend Development Standards for AI-Assisted TypeScript Projects"
+title: "Backend Standards: TypeScript, DDD, and API Development"
 sidebarTitle: "Backend Standards"
-description: "Standards for TypeScript backend development with DDD layered architecture, Prisma ORM, Express, testing requirements, and security guidelines used by the backend-developer agent."
+description: "TypeScript backend standards: DDD architecture, Prisma ORM, Express, testing requirements, and security guidelines for Specboot projects."
 ---
 
 These standards govern all backend development in Specboot-managed projects. The backend follows Domain-Driven Design (DDD) principles and a layered architecture to ensure consistency, maintainability, and scalability. They apply to any AI agent working across the `backend/src/`, `backend/prisma/`, and related configuration files.
@@ -241,6 +241,29 @@ class CandidateWithEmail extends Candidate {
     sendEmail() { /* new behavior, no modification to base */ }
 }
 ```
+
+### Liskov Substitution Principle (LSP)
+
+Objects of a derived class should be replaceable with objects of the base class without altering the program's functionality.
+
+```typescript
+// Avoid: subclass that cannot replace its base class
+class TemporaryCandidate extends Candidate {
+    saveToDatabase() {
+        throw new Error("Temporary candidates can't be saved.");
+    }
+}
+
+// Good: appropriate implementation that respects the base class contract
+class TemporaryCandidate extends Candidate {
+    saveToDatabase() {
+        console.log("Handled temporarily");
+        // Alternative: Save to temporary storage
+    }
+}
+```
+
+The project currently uses composition over inheritance, which naturally supports LSP. Continue using composition to avoid violations. Any future inheritance structures must allow derived classes to substitute their base without altering program behavior.
 
 ### Interface Segregation Principle (ISP)
 
@@ -515,6 +538,70 @@ Every function needs coverage across five categories:
 - Properly handle promise rejections
 - Test timeout scenarios where applicable
 
+### Error Testing
+
+- Test both expected errors and unexpected errors
+- Verify error messages are descriptive and helpful
+- Test error propagation through service layers
+- Ensure proper HTTP status codes in controller tests
+
+### Controller Testing Specifics
+
+- Mock the service layer completely
+- Test HTTP request/response handling
+- Verify parameter parsing and validation
+- Test error response formatting
+- Use realistic Express Request/Response mocks
+
+### Service Testing Specifics
+
+- Mock domain models and repositories
+- Test business logic in isolation
+- Verify data transformation and validation
+- Test error handling and edge cases
+- Mock external dependencies (Prisma, validators)
+
+### Database Testing
+
+- Mock Prisma client and all database operations
+- Test both successful and failed database operations
+- Verify correct database queries and parameters
+- Test transaction handling and rollback scenarios
+
+### Test Data Management
+
+- Use factory functions for creating test data
+- Keep test data consistent and realistic
+- Avoid hardcoded values in multiple places
+- Use meaningful test data that reflects real-world scenarios
+
+### Code Quality Standards
+
+- Use strict typing for all test parameters and return values
+- Define proper interfaces for mock data
+- Use type assertions sparingly and with proper justification
+- Write clear, descriptive test names that explain the scenario
+- Add comments for complex test setups
+- Keep test code as readable as production code
+- Keep tests fast and focused; avoid unnecessary async operations
+- Use appropriate mock strategies to avoid real I/O
+
+### Integration with Development Workflow
+
+- Run tests before every commit
+- Ensure all tests pass before merging
+- Use test-driven development when appropriate
+- Update tests when modifying existing functionality
+
+### Common Anti-Patterns to Avoid
+
+- Don't test implementation details — test behavior
+- Don't create overly complex test setups
+- Don't ignore failing tests or skip error scenarios
+- Don't use real database connections in unit tests
+- Don't create tests that depend on external services
+- Don't write tests tightly coupled to implementation details
+
 ## Performance Best Practices
 
 ### Database Query Optimization
@@ -543,6 +630,12 @@ const [candidates, positions] = await Promise.all([
     positionService.findAll()
 ]);
 ```
+
+### Error Handling Performance
+
+- **Early Returns** — Return early to avoid unnecessary processing.
+- **Error Propagation** — Let errors propagate naturally through the call stack.
+- **Avoid Over-Wrapping** — Don't wrap errors unnecessarily; let the global error middleware handle them.
 
 ## Security Best Practices
 

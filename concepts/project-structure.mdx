@@ -1,7 +1,7 @@
 ---
-title: "Specboot Project Structure After Installation"
+title: "Specboot Project Structure: Files and Directories Explained"
 sidebarTitle: "Project Structure"
-description: "Understand every directory and file Specboot installs: docs/ standards, ai-specs/ agents and skills, copilot config symlinks, and the Cursor rules integration."
+description: "Every directory and file Specboot installs: docs/ standards, ai-specs/ agents and skills, four root copilot symlinks, and the Cursor rules integration."
 ---
 
 When you run `npx @lidr/lidr-specboot` or copy the Specboot template into a project, a specific directory structure is installed alongside your existing code. Every file and directory has a purpose: some contain content you must customize, some are symlinks that wire up multi-copilot support automatically, and some are integration points for specific tools like Cursor. Understanding what each component does tells you where to look when configuring, customizing, or troubleshooting your AI development setup.
@@ -31,7 +31,6 @@ your-project/
 │   │   ├── enrich-us/
 │   │   ├── explain/
 │   │   ├── meta-prompt/
-│   │   ├── sync-agent-symlinks/
 │   │   ├── update-docs/
 │   │   ├── using-git-worktrees/
 │   │   └── writing-skills/
@@ -102,7 +101,7 @@ Agent role definitions that tell an AI assistant *how to behave* when adopting a
 - **`frontend-developer.md`** — Role definition for frontend implementation work; references `docs/frontend-standards.md`
 - **`product-strategy-analyst.md`** — Role definition for requirements analysis and user story enrichment
 
-Add your own agent definitions here as your team develops specialized roles. Any new file you add will be picked up by the symlink structure in `.claude/agents/` and `.cursor/agents/` after running `sync-agent-symlinks`.
+Add your own agent definitions here as your team develops specialized roles. Any new file you add will be picked up by the symlink structure in `.claude/agents/` and `.cursor/agents/` — create the corresponding symlinks after adding the file to stay consistent with Section 6 of `base-standards.md`.
 
 ### `ai-specs/skills/`
 
@@ -113,7 +112,6 @@ Skills are reusable, named workflow prompts that an agent loads automatically wh
 - **`writing-skills/`** — Author and validate new skills following TDD-style verification
 - **`code-auditing/`** — Run a systematic 6-phase code quality audit with a prioritized action plan
 - **`commit/`** — Create focused, conventional commits and manage Pull Requests
-- **`sync-agent-symlinks/`** — Synchronize `.claude/skills/` and `.cursor/skills/` with `ai-specs/skills/`
 - **`explain/`**, **`meta-prompt/`**, **`update-docs/`** — Additional workflow utilities
 
 ### `ai-specs/scripts/`

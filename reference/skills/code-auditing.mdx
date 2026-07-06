@@ -1,10 +1,10 @@
 ---
-title: "code-auditing Skill: Systematic 6-Phase Code Quality Audit"
+title: "code-auditing Skill: Code Quality Audit in Seven Phases"
 sidebarTitle: "code-auditing"
-description: "The code-auditing skill runs a systematic 6-phase audit covering security, performance, type safety, dead code, and library best practices, ending with a prioritized action plan."
+description: "The code-auditing skill runs a systematic audit across 7 phases (0–6) covering security, performance, type safety, dead code, and library best practices."
 ---
 
-The `code-auditing` skill provides a structured, repeatable approach to code quality reviews. Rather than ad-hoc inspection, it guides the agent through six defined phases — from baseline setup to a comprehensive prioritised report — ensuring nothing is missed and findings are actionable.
+The `code-auditing` skill provides a structured, repeatable approach to code quality reviews. Rather than ad-hoc inspection, it guides the agent through seven defined phases (Phase 0 through Phase 6) — from baseline setup to a comprehensive prioritised report — ensuring nothing is missed and findings are actionable.
 
 ## When to Use
 
@@ -14,7 +14,7 @@ The `code-auditing` skill provides a structured, repeatable approach to code qua
 - Dependency and library audits when evaluating upgrades
 - Comprehensive best-practices verification against official documentation
 
-## The 6 Audit Phases
+## The 7 Audit Phases (Phase 0–6)
 
 <Steps>
   <Step title="Phase 0: Pre-Analysis Setup">
@@ -24,7 +24,7 @@ The `code-auditing` skill provides a structured, repeatable approach to code qua
     - Identify the tech stack, frameworks, and core libraries
     - Check for linting and formatting configurations (ESLint, Prettier, Black, etc.)
     - Run existing lint, typecheck, and test commands to establish a **baseline** of pre-existing errors
-    - Use Context7 MCP to pre-load documentation for identified core libraries
+    - Load documentation for identified core libraries
 
     ```bash
     # JavaScript/TypeScript baseline
@@ -61,7 +61,7 @@ The `code-auditing` skill provides a structured, repeatable approach to code qua
   <Step title="Phase 3: Best Practices Verification">
     For every major library and framework identified in Phase 0:
 
-    1. Retrieve the current official documentation (use Context7)
+    1. Retrieve the current official documentation
     2. Compare the actual implementation against official patterns
     3. Identify deviations from recommended usage
     4. Note outdated patterns that need modernisation
@@ -83,7 +83,7 @@ The `code-auditing` skill provides a structured, repeatable approach to code qua
   <Step title="Phase 5: Library Recommendations">
     For every custom implementation found in Phase 2, evaluate whether a mature ecosystem package should replace it:
 
-    1. Check if current libraries already provide the functionality (use Context7)
+    1. Check if current libraries already provide the functionality
     2. Search package registries (npm, PyPI, crates.io) for mature alternatives
     3. Verify library health: recent commits, open issues, download statistics, security advisories
     4. Assess bundle size impact for frontend code
@@ -97,7 +97,7 @@ The `code-auditing` skill provides a structured, repeatable approach to code qua
     - **Executive summary**: total files analysed, high-level findings, key risks
     - **Critical issues**: immediate security or stability blockers with fix examples
     - **File-by-file findings**: all findings with file paths, line numbers, before/after examples
-    - **Prioritised action plan**: effort estimates (S/M/L/XL), dependencies between tasks, suggested sprint allocation
+    - **Prioritised action plan**: effort estimates, recommended remediation order
     - **Library recommendations**: current location, suggested replacement, migration effort
     - **Quick wins**: high-impact fixes under 30 minutes
 

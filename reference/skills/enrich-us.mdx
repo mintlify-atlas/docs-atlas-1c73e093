@@ -1,7 +1,7 @@
 ---
 title: "enrich-us Skill: Refine User Stories for AI Implementation"
 sidebarTitle: "enrich-us"
-description: "The enrich-us skill analyzes and enhances vague user stories into implementation-ready tickets with acceptance criteria, technical detail, and edge cases. Works with direct input or Jira."
+description: "Enrich user stories into ready-to-implement tickets. Accepts direct text or a Jira ID. Outputs Original and Enhanced sections. Jira write-back is optional."
 ---
 
 The `enrich-us` skill transforms incomplete or vague user stories into fully specified, implementation-ready tickets. It acts as a product expert with technical depth, closing the gap between a rough idea and a story an AI agent can implement autonomously without ambiguity.
@@ -93,7 +93,6 @@ files to modify, definition of done, test requirements, and NFRs]
 
 ## Requirements
 
-- **High-reasoning mode**: Use this skill with an Opus or equivalent high-reasoning model. Base-standards.md Section 5 specifies model selection guidelines for tasks that require deep technical analysis.
 - **Project context**: The skill reads `@documentation` to align the enhanced ticket with your real architecture, so having an up-to-date `docs/` folder improves output quality significantly.
 - **Jira MCP** *(optional)*: Required only for Jira mode. If you don't have the Jira MCP configured, use direct input mode instead.
 

@@ -61,18 +61,6 @@ The result is that `.claude/agents/backend-developer.md` and `.cursor/agents/bac
 
 These rules mean that adding a new agent is a two-step operation: create the file in `ai-specs/agents/`, then create symlinks in `.claude/agents/` and `.cursor/agents/`. Skipping the second step is a rule violation, not just a missed convenience.
 
-<Tip>
-The `sync-agent-symlinks` skill in `ai-specs/skills/sync-agent-symlinks/` automates the process of keeping `.claude/skills/` and `.cursor/skills/` aligned with `ai-specs/skills/` as the canonical source. Use it after any skill addition, removal, or rename to detect and repair broken or orphaned symlinks without manual inspection.
-
-```bash
-# The skill can be invoked directly by your agent:
-# "Run the sync-agent-symlinks skill"
-#
-# It will inventory ai-specs/skills and both mirror targets,
-# then add missing links, fix broken ones, and remove orphans.
-```
-</Tip>
-
 ## Adding Support for a New Copilot
 
 If a new AI tool enters your workflow and looks for its configuration at a different path — for example `WINDSURF.md` or `CODY.md` — adding support is a single command:

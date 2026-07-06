@@ -1,7 +1,7 @@
 ---
 title: "OpenSpec Workflow: From User Story to Merged PR"
 sidebarTitle: "OpenSpec Workflow"
-description: "Walk through Specboot's full spec-driven development loop: enrich user stories, generate feature artifacts, implement tasks, verify, review, archive, and commit."
+description: "Walk through Specboot's spec-driven loop: enrich stories, generate artifacts, implement tasks, verify, review, archive, and commit to a pull request."
 ---
 
 Specboot's OpenSpec workflow gives every user story a deterministic, artifact-first path to a merged pull request. Rather than jumping straight to code, the workflow ensures that planning, implementation, verification, and review each happen in the right order — with OpenSpec managing the artifacts that bind them together. The result is traceable, reviewable changes where documentation is always the source of truth.
@@ -130,7 +130,7 @@ The skill will detect existing isolation, create a worktree under `.worktrees/<b
 ## Planning Model Requirement
 
 <Note>
-  The `/enrich-us` and `/ff` (feature file) steps are planning workflows and **must run with Claude Opus in high-reasoning mode**. Before starting either workflow, the agent verifies it is using `claude-opus-4-7`. If it is not, it self-corrects by adding `"model": "claude-opus-4-7"` to `.claude/settings.json` — it does not stop and ask.
+  The `/enrich-us`, `/new`, and `/ff` (feature file) steps are planning workflows and **must run with Claude Opus in high-reasoning mode**. Before starting any of these workflows, the agent verifies it is using `claude-opus-4-7`. If it is not, it self-corrects by adding `"model": "claude-opus-4-7"` to `.claude/settings.json` — it does not stop and ask.
 
   After planning is complete (i.e., for `/apply`, `/verify`, `/adversarial-review`, `/archive`, and `/commit`), the model returns to Sonnet medium automatically. You do not need to manage this manually.
 </Note>

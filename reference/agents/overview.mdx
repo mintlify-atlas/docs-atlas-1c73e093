@@ -1,7 +1,7 @@
 ---
 title: "AI Agent Roles: Pre-Built Experts for Your Coding Workflow"
 sidebarTitle: "Overview"
-description: "Specboot ships three pre-built AI agent role definitions — backend developer, frontend developer, and product analyst — each with expert system prompts and tool configurations."
+description: "Specboot's three pre-built AI agent roles: backend developer, frontend developer, and product analyst, each with expert prompts and tool configurations."
 ---
 
 Specboot ships three pre-built AI agent role definitions, each packaged as a Markdown file with a YAML frontmatter header followed by a detailed system prompt. These files live in `ai-specs/agents/` and are the canonical source of truth for agent configuration. When you add Specboot to a project, Claude and Cursor automatically discover them through symlinks — `.claude/agents/` and `.cursor/agents/` both point back to `ai-specs/agents/` — so every copilot finds the same definitions without duplication.
@@ -54,7 +54,7 @@ Talking directly to your AI assistant works well for quick questions, small edit
     icon="browser"
     href="/reference/agents/frontend-developer"
   >
-    React component architecture expert. Implements service layers, hooks, React Router, and React Bootstrap patterns. Saves plans to `.claude/doc/{feature}/frontend.md`.
+    React component architecture expert. Plans service layers, hooks, React Router, and React Bootstrap patterns — never writes implementation code. Saves plans to `.claude/doc/{feature}/frontend.md`.
   </Card>
   <Card
     title="Product Strategy Analyst"

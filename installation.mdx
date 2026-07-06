@@ -1,7 +1,7 @@
 ---
 title: "Install Specboot: CLI Bootstrap for AI Development Standards"
 sidebarTitle: "Installation"
-description: "Install Specboot via npx or copy manually into your project. Node.js 18+ required. Existing files are never overwritten."
+description: "Install Specboot via npx or npm to bootstrap AI development standards into any project. Node.js 18+ required. Safe to re-run — no files overwritten."
 ---
 
 Specboot installs as a project-level bootstrap, not as a permanent global dependency. Run it once inside your project and it copies all template files, wires up the multi-copilot symlinks, and exits — leaving behind a self-contained directory structure you own and version-control alongside your code.
@@ -25,6 +25,12 @@ Specboot installs as a project-level bootstrap, not as a permanent global depend
   npx @lidr/lidr-specboot /path/to/your/project
   ```
 
+  ```bash Global install
+  # Install once, then run in any project directory
+  npm install -g @lidr/lidr-specboot
+  lidr-specboot
+  ```
+
   ```bash Manual copy
   # Clone the repository, then copy files (skips existing files with -n)
   cp -rn lidr-specboot/* your-project/
@@ -42,7 +48,9 @@ Specboot installs as a project-level bootstrap, not as a permanent global depend
 
 **Method 2 — `npx` with a target directory:** Identical to Method 1, but you specify the destination path as an argument instead of `cd`-ing into it first. Useful in scripts or CI bootstrapping.
 
-**Method 3 — Manual copy:** Use this when you need offline installation or want to inspect the files before they land in your project. The `-n` flag in `cp` prevents overwriting any files that already exist. After copying, create the four copilot symlinks by hand as shown above, then mirror `ai-specs/agents/` and `ai-specs/skills/` into `.claude/` and `.cursor/` using relative symlinks (see [Symlink Structure](#symlink-structure) below).
+**Method 3 — Global install:** Installs the `lidr-specboot` binary globally via `npm install -g @lidr/lidr-specboot`, then run `lidr-specboot` (with an optional target directory argument) from anywhere. Useful when you bootstrap multiple projects regularly and prefer not to pull from the npm registry each time.
+
+**Method 4 — Manual copy:** Use this when you need offline installation or want to inspect the files before they land in your project. The `-n` flag in `cp` prevents overwriting any files that already exist. After copying, create the four copilot symlinks by hand as shown above, then mirror `ai-specs/agents/` and `ai-specs/skills/` into `.claude/` and `.cursor/` using relative symlinks (see [Symlink Structure](#symlink-structure) below).
 
 ## What Gets Installed
 
